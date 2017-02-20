@@ -40,11 +40,15 @@ module.exports = UI.Section.clone({
 /**
 * Initialise the columns collection in this section object
 */
-module.exports.defbind("cloneListBase", "cloneInstance", function () {
+module.exports.defbind("cloneColumns", "clone", function () {
     this.columns = this.parent.columns.clone({
         id: "ListBase.columns",
         section: this,
     });
+});
+
+
+module.exports.defbind("cloneListBase", "cloneInstance", function () {
     this.row_count = 0;
     this.keys = [];
 });
@@ -878,7 +882,7 @@ module.exports.columns.override("add", function (col_spec) {
     }
 //    column = module.exports.Column.clone(col_spec);
     // Allows section specific column overrides to have an affect
-    column = UI.ListBaseColumn.clone(col_spec);
+    column = UI.ListBase.Column.clone(col_spec);
     Core.OrderedMap.add.call(this, column);
     return column;
 });

@@ -16,7 +16,8 @@ module.exports.override("clone", function (spec) {
         if (!obj.entity_id) {
             this.throwError("Neither record nor entity_id supplied");
         }
-        obj.record = Data.Entity.getEntity(obj.entity_id).getRecord({ modifiable: false, });
+        obj.record = Data.Entity.entities.getThrowIfUnrecognized(obj.entity_id)
+            .getRecord({ modifiable: false, });
     }
     return obj;
 });

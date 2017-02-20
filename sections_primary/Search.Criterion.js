@@ -95,6 +95,7 @@ module.exports.define("setURLComponentParams", function (params) {
     var i;
     var highest_index;
     var filter;
+    var that = this;
 
     if (this.owner.section.set_url_params_changes_filters) {
         this.clearFilters();
@@ -102,7 +103,7 @@ module.exports.define("setURLComponentParams", function (params) {
     highest_index = this.getHighestIndex(params);
 
     function setField(field, val) {
-        this.debug("setURLComponentParams.setField() field.get(): " + field.get() + ", val:" + val);
+        that.debug("setURLComponentParams.setField() field.get(): " + field.get() + ", val:" + val);
         if (typeof val === "string" && field.get() !== val) {
             field.set(val);
         }

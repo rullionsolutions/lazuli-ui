@@ -47,8 +47,9 @@ UI.Page.tabs.override("add", function (spec) {
 
 UI.Page.define("renderTabs", function (parent_elmt, render_opts) {
     var elmt;
+    var that = this;
     this.tabs.each(function (tab) {
-        this.trace("render tab: " + tab.id + ", visible? " + tab.visible);
+        that.trace("render tab: " + tab.id + ", visible? " + tab.visible);
         if (tab.visible) {
             elmt = elmt || parent_elmt.makeElement("div", "css_hide", "css_payload_page_tabs");
             tab.render(elmt, render_opts);

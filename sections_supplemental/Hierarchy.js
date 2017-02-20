@@ -15,7 +15,6 @@ module.exports = UI.Section.clone({
 
 
 module.exports.defbind("setupLogic", "setup", function () {
-    Data.Enttity.entities.getThrowIfUnrecognized(this.entity);
     this.top_level = this.Level.clone({
         id: "_top",
         entity_id: this.entity,

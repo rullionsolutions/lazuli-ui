@@ -194,7 +194,7 @@ module.exports.define("setURLComponentParams", function (params) {
 * @return x.XmlStream object representing this section's outer div
 */
 module.exports.override("render", function (element, render_opts) {
-    this.section_types.get("Section").render.call(this, element, render_opts);
+    this.getSectionType("Section").render.call(this, element, render_opts);
     this.renderSearch(render_opts, this.getSectionElement(render_opts));
     if (this.auto_execute || this.clicked_search) {
         this.renderList(render_opts);

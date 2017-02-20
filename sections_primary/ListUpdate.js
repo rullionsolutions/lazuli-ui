@@ -105,7 +105,7 @@ module.exports.define("addEntityColumns", function (entity) {
         var col;
         if (field.accessible !== false) {
             col = that.columns.add({ field: field, });
-            this.trace("Adding field as column: " + field.id + " to section " + that.id);
+            that.trace("Adding field as column: " + field.id + " to section " + that.id);
             if (col.id === that.link_field) {
                 col.visible = false;
             }
@@ -137,7 +137,7 @@ module.exports.define("setupAddRowField", function (add_row_field_id, add_row_un
         active_prop: orig_add_row_field.active_prop,
     });
     this.add_row_field_obj.override("getFormGroupCSSClass", function (form_type, editable) {
-        return Data.Entity.field_types.get("Option").getFormGroupCSSClass.call(this, form_type, editable) + " css_list_add";
+        return Data.Option.getFormGroupCSSClass.call(this, form_type, editable) + " css_list_add";
     });
     // make sure we have full lov here..
     this.add_row_field_obj.getOwnLoV({ skip_full_load: false, });

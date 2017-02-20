@@ -67,7 +67,7 @@ module.exports.define("getPage", function (id) {
     //     this.throwError("page not registered: " + id);
     // }
     // return pages[id];
-    return module.exports.pages.getThrowIfUnrecognized(id);
+    return module.exports.pages.get(id);
 });
 
 
@@ -101,21 +101,6 @@ module.exports.defbind("clonePage", "clone", function () {
         instance: this.instance,
     });
     this.internal_state = 19;
-});
-
-
-module.exports.defbind("eventShim", "clone", function () {
-    var that = this;
-    this.events = {
-        add: function (id, event, script) {
-            if (id === "presave") {
-                id = "presaveEvent";
-            } else if (id === "update") {
-                id = "updateEvent";
-            }
-            that.defbind(id, event, script);
-        },
-    };
 });
 
 
@@ -168,12 +153,14 @@ module.exports.define("setup", function () {
 */
 module.exports.define("setupButtons", function () {
     var that = this;
-    Object.keys(this.outcomes).forEach(function (id) {
-        that.outcomes[id].id = id;
-        that.outcomes[id].save = true;
-        that.outcomes[id].main_button = false;
-        that.buttons.add(that.outcomes[id]);
-    });
+    if (this.outcomes) {
+        Object.keys(this.outcomes).forEach(function (id) {
+            that.outcomes[id].id = id;
+            that.outcomes[id].save = true;
+            that.outcomes[id].main_button = false;
+            that.buttons.add(that.outcomes[id]);
+        });
+    }
     if (this.tab_sequence) {
         this.buttons.add({
             id: "prev_tab",
@@ -351,8 +338,12 @@ module.exports.define("updateReferParams", function (params) {
 * @param params: object map of strings
 */
 module.exports.define("updateFields", function (params) {
-    Object.kys(this.fields).forEach(function (field_id, field) {
-        field.setFromParams(params);
+    var that = this;
+    if (!this.fields) {
+        return;
+    }
+    Object.keys(this.fields).forEach(function (field_id) {
+        that.fields[field_id].setFromParams(params);
     });
 });
 
@@ -645,19 +636,19 @@ module.exports.define("save", function () {
                 text: "not saved due to error",
             });
         }
-        if (this.performing_wf_nodes) {
-            for (i = 0; i < this.performing_wf_nodes.length; i += 1) {
-                this.performing_wf_nodes[i].complete(this.outcome_id);
-            }
-        }
+        // if (this.performing_wf_nodes) {
+        //     for (i = 0; i < this.performing_wf_nodes.length; i += 1) {
+        //         this.performing_wf_nodes[i].complete(this.outcome_id);
+        //     }
+        // }
         // failures in performing_wf_nodes[i].complete() are irreversible
-        if (!this.trans.isValid()) {
-            this.debug("Page.save() cancelling - trans is not valid after performing_wf_nodes[...].complete()");
-            this.throwError({
-                type: "E",
-                text: "not saved due to error",
-            });
-        }
+        // if (!this.trans.isValid()) {
+        //     this.debug("Page.save() cancelling - trans is not valid after performing_wf_nodes[...].complete()");
+        //     this.throwError({
+        //         type: "E",
+        //         text: "not saved due to error",
+        //     });
+        // }
         if (!this.allow_no_modifications && !this.trans.isModified()) {
             this.throwError({
                 type: "W",

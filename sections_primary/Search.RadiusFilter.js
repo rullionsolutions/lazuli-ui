@@ -58,7 +58,7 @@ module.exports.override("update", function (params) {
 module.exports.define("setRadiusCondition", function () {
     var district1;
     this.prev_postcode = this.filt_field.get();
-    district1 = Data.Entity.field_types.get("Postcode").getDistrict(this.filt_field.get());
+    district1 = Data.Postcode.getDistrict(this.filt_field.get());
 //  district2 = x.fields.Postcode.getDistrict(this.criterion.base_postcode);
     this.condition.column = "( " +
         "SELECT SQRT(POW(ZP1.easting - ZP2.easting, 2) + POW(ZP1.northing - ZP2.northing, 2))/1000 as dist " +
