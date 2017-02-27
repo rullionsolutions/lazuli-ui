@@ -20,7 +20,7 @@ module.exports.override("setEntity", function () {
     if (typeof this.entity === "string" && !this.entity_id) {
         this.entity_id = this.entity;
     }
-    this.entity = Data.Entity.getEntityThrowIfUnrecognized("ac_tx");
+    this.entity = Data.entities.getThrowIfUnrecognized("ac_tx");
 });
 
 

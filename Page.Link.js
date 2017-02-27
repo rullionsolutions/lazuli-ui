@@ -22,7 +22,7 @@ module.exports = Core.Base.clone({
 module.exports.define("getToPage", function () {
     var page_to = null;
     if (this.page_to) {
-        page_to = UI.Page.getPage(this.page_to);
+        page_to = UI.pages.get(this.page_to);
         if (!page_to) {
             this.throwError("unrecognized to page: " + this.page_to);
         }

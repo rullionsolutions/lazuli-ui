@@ -117,7 +117,7 @@ module.exports.define("renderSingleBadgeLine", function (element, props) {
 
 
 module.exports.define("addAssignedWorkflowTasks", function (user_id, wf_type_id) {
-    var query = Data.Entity.getEntity("wf_inst_node").getQuery();
+    var query = Data.entities.get("wf_inst_node").getQuery();
     query.addCondition({
         column: "A.assigned_user",
         operator: "=",
@@ -137,7 +137,7 @@ module.exports.define("addDelegatedWorkflowTasks", function (sql_condition, wf_t
     if (!sql_condition) {
         return 0;
     }
-    query = Data.Entity.getEntity("wf_inst_node").getQuery();
+    query = Data.entities.get("wf_inst_node").getQuery();
     query.addCondition({
         full_condition: "A.assigned_user in (" + sql_condition +
             ") and (instr(ifnull(A.attributes, ''), 'PD') = 0)",

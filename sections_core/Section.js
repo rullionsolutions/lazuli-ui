@@ -26,31 +26,6 @@ module.exports.register("cancel");
 module.exports.register("render");
 
 
-module.exports.sections = Core.Collection.clone({
-    id: "sections",
-    item_type: module.exports,
-    Section: module.exports,
-});
-
-
-module.exports.define("registerSectionType", function (section) {
-    // if (section_types[section.id]) {
-    //     this.throwError("section type already registered: " + section.id);
-    // }
-    // section_types[section.id] = section;
-    module.exports.sections.add(section);
-});
-
-
-module.exports.define("getSectionType", function (id) {
-    // if (!section_types[id]) {
-    //     this.throwError("section type not registered: " + id);
-    // }
-    // return section_types[id];
-    return module.exports.sections.getThrowIfUnrecognized(id);
-});
-
-
 /**
 * Inheritance hook for one-time initialisation logic for this page section; called by x.Page.setup()
 * before setupCall()
@@ -60,7 +35,7 @@ module.exports.defbind("setEntity", "setup", function () {
         this.entity_id = this.entity;
     }
     if (typeof this.entity !== "object" && this.entity_id) {        // any section that uses a primary entity object can either specify entity_id or call overrideEntity() in page::setupStart
-        this.entity = Data.Entity.getEntityThrowIfUnrecognized(this.entity_id);
+        this.entity = Data.entities.getThrowIfUnrecognized(this.entity_id);
     }
 });
 
@@ -72,7 +47,8 @@ module.exports.defbind("setAccessible", "setup", function () {
             this.owner.page.session.checkSecurityLevel(this.entity.security, allowed, "entity");
         }
         if (!allowed.found && this.entity.area) {
-            this.owner.page.session.checkSecurityLevel(Data.Area.getArea(this.entity.area).security, allowed, "area");
+            this.owner.page.session.checkSecurityLevel(
+                Data.areas.getThrowIfUnrecognized(this.entity.area).security, allowed, "area");
         }
         this.accessible = allowed.access;
     }
@@ -81,7 +57,7 @@ module.exports.defbind("setAccessible", "setup", function () {
 
 module.exports.define("overrideEntity", function (entity_id) {
     // not using getRecord() - don't want an instance...
-    this.entity = Data.Entity.getEntityThrowIfUnrecognized(entity_id).clone({
+    this.entity = Data.entities.getThrowIfUnrecognized(entity_id).clone({
         id: entity_id,
         skip_registration: true,
     });
@@ -199,7 +175,7 @@ UI.Page.sections.override("add", function (spec) {
     if (!spec.type) {
         this.throwError("Section type must be specified in spec: " + spec.id);
     }
-    section = module.exports.getSectionType(spec.type).clone(spec);
+    section = UI.sections.getThrowIfUnrecognized(spec.type).clone(spec);
     Core.OrderedMap.add.call(this, section);
     return section;
 });

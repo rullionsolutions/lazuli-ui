@@ -31,7 +31,7 @@ module.exports.defbind("cloneListUpdate", "cloneInstance", function () {
 */
 module.exports.defbind("setupSequence", "setup", function () {
     if (typeof this.entity_id === "string" || typeof this.entity === "string") {        // 'entity' as a string property is deprecated
-        this.entity = Data.Entity.getEntityThrowIfUnrecognized(this.entity_id || this.entity);
+        this.entity = Data.entities.getThrowIfUnrecognized(this.entity_id || this.entity);
     }
 //    this.generated_title = this.entity.getPluralLabel();
     this.getParentRecord();
@@ -167,7 +167,7 @@ module.exports.define("getAddRowItem", function (val) {
 */
 module.exports.define("setupLoadQuery", function () {
     if (this.load_entity_id) {
-        this.query = Data.Entity.getEntity(this.load_entity_id).getQuery(true);      // default sort
+        this.query = Data.entities.get(this.load_entity_id).getQuery(true);      // default sort
     } else {
         this.query = this.entity.getQuery(true);                            // default sort
     }

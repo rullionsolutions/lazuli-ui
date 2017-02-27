@@ -28,7 +28,7 @@ module.exports.defbind("setupSequence", "setup", function () {
     }
     // if (typeof this.entity_id === "string" || typeof this.entity === "string") {
     // 'entity' as a string property is deprecated
-    //     this.entity = Entity.getEntityThrowIfUnrecognized(this.entity_id || this.entity);
+    //     this.entity = Data.entities.getThrowIfUnrecognized(this.entity_id || this.entity);
     // }
     if (!this.record) {
         this.setupRecord();

@@ -536,7 +536,7 @@ module.exports.define("renderBulk", function (foot_elem, render_opts) {
     //     .attribute("value", JSON.stringify(this.selected_keys || []));
 
     Object.keys(this.bulk_actions).forEach(function (key) {
-        if (that.bulk_actions[key].visible && UI.Page.getPage(that.bulk_actions[key].target_page)) {
+        if (that.bulk_actions[key].visible && UI.pages.get(that.bulk_actions[key].target_page)) {
             cell_elem.makeAnchor(that.bulk_actions[key].button_label,
                 "modal?page_id=" + that.bulk_actions[key].target_page + "&page_key=" + that.owner.page.page_key,
                 "btn btn-mini css_bulk disabled");

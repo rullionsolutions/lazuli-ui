@@ -26,7 +26,7 @@ module.exports.override("setupLoadQuery", function () {
 
 module.exports.defbind("setupLogic", "setup", function () {
     var template = this;
-    var entity = Data.Entity.getEntity(this.base_entity_id);
+    var entity = Data.entities.get(this.base_entity_id);
 
     this.field_rows = {};
     entity.each(function (field) {

@@ -3,6 +3,7 @@
 var Core = require("lapis-core/index.js");
 var Data = require("lazuli-data/index.js");
 var IO = require("lazuli-io/index.js");
+var UI = require("lazuli-ui/index.js");
 
 // var pages = {};
 
@@ -41,33 +42,15 @@ module.exports.register("renderStart");
 module.exports.register("renderEnd");
 
 
-module.exports.pages = Core.Collection.clone({
-    id: "pages",
-    item_type: module.exports,
-});
-
-
 module.exports.defbind("registerPage", "cloneType", function () {
-    // if (pages[this.id]) {
-    //     this.throwError("page already registered: " + this.id);
-    // }
-    // pages[this.id] = this;
+    UI.pages[this.id] = this;
 
     if (this.entity_id && !this.entity) {
-        this.entity = Data.Entity.getEntityThrowIfUnrecognized(this.entity_id);
+        this.entity = Data.entities.getThrowIfUnrecognized(this.entity_id);
     }
     if (this.page_key_entity_id && !this.page_key_entity) {
-        this.page_key_entity = Data.Entity.getEntityThrowIfUnrecognized(this.page_key_entity_id);
+        this.page_key_entity = Data.entities.getThrowIfUnrecognized(this.page_key_entity_id);
     }
-});
-
-
-module.exports.define("getPage", function (id) {
-    // if (!pages[id]) {
-    //     this.throwError("page not registered: " + id);
-    // }
-    // return pages[id];
-    return module.exports.pages.get(id);
 });
 
 
@@ -200,7 +183,7 @@ module.exports.define("setupButtons", function () {
 module.exports.define("getArea", function () {
     var area = this.area || this.area_id || (this.entity && this.entity.area);
     if (typeof area === "string") {
-        area = Data.Area.getArea(area);
+        area = Data.areas.getThrowIfUnrecognized(area);
     }
     return area;
 });
@@ -555,10 +538,18 @@ module.exports.define("addEmail", function (spec) {
     spec.page = this;
     spec.trans = this.trans;
     spec.session = this.session;
-    // addded to this.emails array in ac_email.initialize()
-    return Data.Entity.getEntity("ac_email").create(spec);
+    // addded to this.emails array in ac_email.initialize() - calls addEmailRow()
+    return Data.entities.get("ac_email").create(spec);
 });
 
+
+module.exports.define("addEmailRow", function (email_row) {
+    if (this.emails.indexOf(email_row) !== -1) {
+        this.warn("An email with id: " + email_row.id + " has already been queued");
+    } else {
+        this.emails.push(email_row);
+    }
+});
 
 /**
 * Send the emails queued to this page by calls to addEmail()
@@ -581,7 +572,7 @@ module.exports.define("sendEmails", function () {
 * @return New workflow instance object
 */
 module.exports.define("instantiateWorkflow", function (record, wf_tmpl_id, wf_inst_ref_field) {
-    var wf_inst = Data.Entity.getEntity("wf_inst").instantiate(this.getTrans(), wf_tmpl_id, record.getKey());
+    var wf_inst = Data.entities.get("wf_inst").instantiate(this.getTrans(), wf_tmpl_id, record.getKey());
     wf_inst.first_node.getField("page").set(this.id);        // First node's page is just set to current page
     wf_inst.first_node.getField("title").set(this.title);
 //    if (wf_inst.first_node.getField("page").get() !== this.id) {
@@ -699,7 +690,7 @@ module.exports.define("reportSaveMessage", function () {
         // show undo link if online session and no auto steps involved
         if (this.trans.next_auto_steps_to_perform.length === 0 && !this.hide_undo_link_on_save) {
             text += " " + IO.XmlStream.left_bracket_subst + "a class='css_undo_link' href='" +
-                this.getPage("ac_tx_undo").getSimpleURL(this.trans.id) +
+                UI.pages.get("ac_tx_undo").getSimpleURL(this.trans.id) +
                 "&page_button=undo'" + IO.XmlStream.right_bracket_subst + "undo" +
                 IO.XmlStream.left_bracket_subst + "/a" + IO.XmlStream.right_bracket_subst;
         }
@@ -841,7 +832,7 @@ module.exports.define("renderDetails", function (page_elem, render_opts) {
         details_elmt.attr("data-page-tab", this.page_tab.id);
     }
     if (this.browser_timeout) {
-        details_elmt.attr("data-browser-timeout", this.browser_timeout);
+        details_elmt.attr("data-browser-timeout", String(this.browser_timeout));
     }
     if (this.prompt_message) {
         details_elmt.attr("data-prompt-message", this.prompt_message);
@@ -1050,7 +1041,7 @@ module.exports.define("addPerformingWorkflowNode", function (inst_id, node_id) {
     }
 
     this.debug("addPerformingWorkflowNode, inst_id: " + inst_id + ", node_id: " + node_id);
-    wf_inst = Data.Entity.getEntity("wf_inst").retrieve(this.getTrans(), inst_id);
+    wf_inst = Data.entities.get("wf_inst").retrieve(this.getTrans(), inst_id);
     inst_node = wf_inst.getNode(node_id);
     inst_node.page = this;
     this.performing_wf_nodes.push(inst_node);

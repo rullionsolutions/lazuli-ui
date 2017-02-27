@@ -14,7 +14,7 @@ module.exports.defbind("cloneInstance", "cloneInstance", function () {
         if (!this.entity_id) {
             this.throwError("Neither record nor entity_id supplied");
         }
-        this.record = Data.Entity.getEntityThrowIfUnrecognized(this.entity_id)
+        this.record = Data.entities.getThrowIfUnrecognized(this.entity_id)
             .getRecord({ modifiable: false, });
     }
     this.children = [];
