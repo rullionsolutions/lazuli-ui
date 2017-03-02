@@ -61,9 +61,12 @@ exports.sections.add(exports.TemplateUpdate = require("lazuli-ui/sections_supl/T
 exports.sections.add(exports.Tiles = require("lazuli-ui/sections_supl/TileGrid.js"));
 exports.sections.add(exports.Tiles = require("lazuli-ui/sections_supl/Tiles.js"));
 
+exports.sections.add(exports.ExportHistory = require("lazuli-ui/sections_supl/ExportHistory.js"));
+
 
 // Derived Pages
 exports.BatchPage = require("lazuli-ui/BatchPage.js");
 exports.ContextPage = require("lazuli-ui/ContextPage.js");
+exports.ConfirmPage = require("lazuli-ui/ConfirmPage.js");
 exports.BulkActionPage = require("lazuli-ui/BulkActionPage.js");
 exports.sy_bulk_action = exports.BulkActionPage;        // backward compatibility
