@@ -62,7 +62,7 @@ exports.sections.add(exports.Tiles = require("lazuli-ui/sections_supl/TileGrid.j
 exports.sections.add(exports.Tiles = require("lazuli-ui/sections_supl/Tiles.js"));
 
 exports.sections.add(exports.ExportHistory = require("lazuli-ui/sections_supl/ExportHistory.js"));
-
+exports.sections.add(exports.FlexUpdate = require("lazuli-ui/sections_supl/FlexUpdate.js"));
 
 // Derived Pages
 exports.BatchPage = require("lazuli-ui/BatchPage.js");
