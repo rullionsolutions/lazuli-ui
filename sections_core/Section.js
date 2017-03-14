@@ -96,10 +96,17 @@ module.exports.define("getSectionElement", function (render_opts) {
         this.sctn_elem = this.parent_elem.addChild("div", this.id, this.getCSSClass());
         temp_title = this.title || this.generated_title;
         if (temp_title) {
-            this.sctn_elem.addChild("h2", null, "css_section_title").addText(temp_title);
+            this.sctn_elem.makeElement("h2", "css_section_title")
+                .text(temp_title);
         }
         if (this.text) {
-            this.sctn_elem.addChild("div", null, "css_section_text").addText(this.text, true);    // Valid XML content
+            this.sctn_elem.makeElement("div", "css_section_text")
+                .text(this.text, true);    // Valid XML content
+        }
+        if (this.scoped_style) {
+            this.sctn_elem.makeElement("style")
+                .attr("scoped", "scoped")
+                .text(this.scoped_style, true, true);
         }
     }
     return this.sctn_elem;
