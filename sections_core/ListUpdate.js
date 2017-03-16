@@ -132,6 +132,7 @@ module.exports.define("setupAddRowField", function (add_row_field_id, add_row_un
         list: orig_add_row_field.list,
         ref_entity: orig_add_row_field.ref_entity,
         selection_filter: this.selection_filter,
+        collection_id: orig_add_row_field.collection_id,
         config_item: orig_add_row_field.config_item,
         label_prop: orig_add_row_field.label_prop,
         active_prop: orig_add_row_field.active_prop,
@@ -221,24 +222,36 @@ module.exports.define("addNewRow", function (field_id, field_val) {
 
 
 module.exports.define("addNewRowInternal", function (field_id, field_val) {
-    var trans = this.owner.page.getTrans();
-    var row = trans.createNewRow(this.entity.id);
-    this.getParentRecord();
-// superseded by linkToParent()
-//    if (this.parent_record && this.link_field
-//          && typeof this.parent_record.getKey() === "string") {
-//        row.getField(this.link_field).set(this.parent_record.getKey());
-//    }
-    if (field_id && field_val) {
-        row.getField(field_id).set(field_val);
+    var row;
+    this.getParentRecord();         // ensure this.parent_record populated if can be
+    if (field_id && field_val && this.parent_record && this.parent_record.isKeyComplete()) {
+        row = this.getDeletedRowIfExists(field_id, field_val);
     }
-    // if (row.duplicate_key) {
-    //     key = row.getKey();
-    //     trans.new_rows.splice(trans.new_rows.indexOf(row), 1);
-    //     row = trans.getActiveRow(this.entity.id, key);
-    //     row.setDelete(false);
-    // }
+    if (!row) {
+        row = this.owner.page.getTrans().createNewRow(this.entity.id);
+        if (field_id && field_val) {
+            row.getField(field_id).set(field_val);
+        }
+    }
     this.addRow(row);
+    return row;
+});
+
+
+module.exports.define("getDeletedRowIfExists", function (field_id, field_val) {
+    var row;
+    var key_values = {};
+    key_values[this.link_field] = this.getParentRecord().getKey();
+    key_values[field_id] = field_val;
+    this.debug("getDeletedRowIfExists() " + this.view.call(key_values));
+    row = this.entity.getCachedRecordFromKeyValues(key_values, this.owner.page.getTrans());
+    this.debug("getDeletedRowIfExists() got: " + row);
+    if (row) {
+        if (!row.deleting) {
+            this.throwError("new record is already in cache and not being deleted");
+        }
+        row.setDelete(false);
+    }
     return row;
 });
 
@@ -271,8 +284,10 @@ module.exports.define("addRow", function (row) {
     }
     row.id_prefix = this.id + "_" + this.rows.length;
     row.linkToParent(this.parent_record, this.link_field);
-    row.addToPage(this.owner.page);
-    this.rows.push(row);
+    if (row.page !== this.owner.page) {
+        row.addToPage(this.owner.page);
+        this.rows.push(row);
+    }
     this.happen("addRow", row);
 });
 
