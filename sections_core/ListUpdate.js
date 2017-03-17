@@ -224,7 +224,8 @@ module.exports.define("addNewRow", function (field_id, field_val) {
 module.exports.define("addNewRowInternal", function (field_id, field_val) {
     var row;
     this.getParentRecord();         // ensure this.parent_record populated if can be
-    if (field_id && field_val && this.parent_record && this.parent_record.isKeyComplete()) {
+    if (field_id && field_val && this.entity.getField(field_id).isKey()
+            && this.parent_record && this.parent_record.isKeyComplete()) {
         row = this.getDeletedRowIfExists(field_id, field_val);
     }
     if (!row) {
