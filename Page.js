@@ -93,19 +93,11 @@ module.exports.defbind("clonePage", "clone", function () {
 module.exports.define("setup", function () {
     var i;
     this.internal_state = 20;
+    this.debug("starting setup");
     if (!this.session) {
         this.throwError("no session property supplied");
     }
     this.internal_state = 21;
-    if (this.allowed && this.allowed.one_time_guest_wf_access) {
-        this.skin = "guest.html";
-        // Redirect to 'thank you' page if one time guest access
-        this.exit_url_save = "?page_id=wf_inst_node_one_time_exit";
-        if (this.performing_wf_nodes && this.performing_wf_nodes[0]) {
-            this.exit_url_save += "&page_key=" + this.performing_wf_nodes[0].getKey();
-        }
-    }
-    this.internal_state = 22;
     this.happen("setupStart");
     this.internal_state = 23;
     this.getPrimaryRow();
@@ -301,7 +293,7 @@ module.exports.define("update", function (params) {
 
 module.exports.define("updateReferParams", function (params) {
     if (params.refer_page_id && params.refer_page_id !== this.id) {
-        this.exit_url = "?page_id=" + params.refer_page_id + (params.refer_page_key ? "&page_key=" + params.refer_page_key : "");
+        this.exit_url = UI.pages.get(params.refer_page_id).getSimpleURL(params.refer_page_key);
         this.refer_page = this.session.getPageFromCache(params.refer_page_id);
         this.debug("Set exit_url from refer_page_id: " + this.exit_url);
         if (this.refer_page && params.refer_section_id) {
@@ -1019,7 +1011,7 @@ module.exports.define("getPrimaryRow", function () {
 */
 module.exports.define("getSimpleURL", function (override_key) {
     var page_key = override_key || this.page_key;
-    return this.skin + "?page_id=" + this.id + (page_key ? "&page_key=" + page_key : "");
+    return this.skin + "#page_id=" + this.id + (page_key ? "&page_key=" + page_key : "");
 });
 
 

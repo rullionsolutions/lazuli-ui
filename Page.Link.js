@@ -41,10 +41,7 @@ module.exports.define("getURL", function (override_key) {
     var page_to = this.getToPage();
 
     if (page_to) {
-        url = page_to.skin + "?page_id=" + page_to.id;
-        if (this.page_key) {
-            url += "&page_key=" + this.getKey(override_key);
-        }
+        url = page_to.getSimpleURL(this.getKey(override_key));
     }
     if (this.url) {
         if (url) {

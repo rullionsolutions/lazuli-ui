@@ -22,6 +22,10 @@ module.exports.override("getSectionElement", function (render_opts) {
         temp_title = this.title || this.generated_title;
         if (temp_title) {
             anchor = this.sctn_elem.addChild("h2", null, "css_section_title");
+            if (this.section_heading_page_id && !this.section_heading_url) {
+                this.section_heading_url = UI.pages.get(this.section_heading_page_id)
+                    .getSimpleURL();
+            }
             if (this.section_heading_url) {
                 anchor = anchor.addChild("a");
                 anchor.attribute("href", this.section_heading_url);
@@ -153,10 +157,8 @@ module.exports.define("addDelegatedWorkflowTasks", function (sql_condition, wf_t
 
 module.exports.define("addWorkflowTasks", function (query, sctn_title) {
     var today = Date.parse("today");
-    var task_obj;
     var curr_title;
     var prev_title;
-    var due_date;
     var task_array;
     var count = 0;
 
@@ -177,16 +179,6 @@ module.exports.define("addWorkflowTasks", function (query, sctn_title) {
     });
     while (query.next()) {
         curr_title = query.getColumn("A.title").get();
-        if (this.tasks_title !== sctn_title) {
-            this.getSectionElement();                // sets this.sctn_elem
-            this.sctn_elem.addChild("br");
-            this.sctn_elem.addChild("h5", null, null, sctn_title);
-            this.tasks_title = sctn_title;
-            this.tasks_ul_elem = null;
-        }
-        if (!this.tasks_ul_elem) {
-            this.tasks_ul_elem = this.sctn_elem.addChild("ul", null, "nav nav-pills css_task_group");
-        }
         if (curr_title !== prev_title) {
             if (task_array) {
                 this.addTasksFromArray(this.tasks_ul_elem, prev_title, task_array);
@@ -194,18 +186,7 @@ module.exports.define("addWorkflowTasks", function (query, sctn_title) {
             prev_title = curr_title;
             task_array = [];
         }
-        task_obj = {
-            id: query.getColumn("A._key").get(),
-            title: query.getColumn("B.title").get(),
-//            url  : query.getColumn("A.simple_url").get()
-            url: "index.html?page_id=" + query.getColumn("A.page").get(),
-        };
-        if (query.getColumn("A.page_key").get()) {
-            task_obj.url += "&page_key=" + query.getColumn("A.page_key").get();
-        }
-        task_array.push(task_obj);
-        due_date = query.getColumn("A.due_date").get();
-        task_obj.overdue = (due_date && due_date < today);
+        task_array.push(this.addWorkflowTaskRecord(query, sctn_title, today));
         count += 1;
     }
     query.reset();
@@ -213,6 +194,29 @@ module.exports.define("addWorkflowTasks", function (query, sctn_title) {
         this.addTasksFromArray(this.tasks_ul_elem, curr_title, task_array);
     }
     return count;
+});
+
+
+module.exports.define("addWorkflowTaskRecord", function (query, sctn_title, today) {
+    var page = UI.pages.get(query.getColumn("A.page").get());
+    var task_obj = {
+        id: query.getColumn("A._key").get(),
+        title: query.getColumn("B.title").get(),
+        url: page.getSimpleURL(query.getColumn("A.page_key").get()),
+    };
+    var due_date = query.getColumn("A.due_date").get();
+    if (this.tasks_title !== sctn_title) {
+        this.getSectionElement();                // sets this.sctn_elem
+        this.sctn_elem.addChild("br");
+        this.sctn_elem.addChild("h5", null, null, sctn_title);
+        this.tasks_title = sctn_title;
+        this.tasks_ul_elem = null;
+    }
+    if (!this.tasks_ul_elem) {
+        this.tasks_ul_elem = this.sctn_elem.addChild("ul", null, "nav nav-pills css_task_group");
+    }
+    task_obj.overdue = (due_date && due_date < today);
+    return task_obj;
 });
 
 
@@ -261,7 +265,7 @@ module.exports.define("addTasksFromArray", function (outer_ul_elem, curr_title, 
     if (task_array.length >= this.max_tasks_to_show_per_dropdown) {
         inner_li_elem = inner_ul_elem.addChild("li");
         inner_a_elem = inner_li_elem.addChild("a");
-        inner_a_elem.attribute("href", "index.html?page_id=wf_tasks");
+        inner_a_elem.attribute("href", UI.pages.get("wf_tasks").getSimpleURL());
         inner_a_elem.addText("More...");
     }
 });
