@@ -16,9 +16,13 @@ module.exports = UI.FormBase.clone({
 * id's match and there is no link_field defined
 */
 module.exports.defbind("setupFieldSet", "setup", function () {
+    var key;
     if (this.fieldset) {
         return;                    // done manually in setupStart
     }
-    this.setFieldSet(this.owner.page.getTrans().getActiveRow(this.entity.id, this.deduceKey()));
-    this.fieldset.touch();
+    key = this.deduceKey();
+    if (key) {
+        this.setFieldSet(this.owner.page.getTrans().getActiveRow(this.entity.id, this.deduceKey()));
+        this.fieldset.touch();
+    }
 });
