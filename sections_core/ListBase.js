@@ -720,7 +720,7 @@ module.exports.define("renderColumnChooserColumn", function (ctrl_elem, render_o
         return;
     }
     ctrl_elem.addChild("button", "list_" + this.id + "_col_" + col.id + (col.visible ? "_hide" : "_show"),
-            "btn btn-mini css_cmd " + (col.visible ? "active" : ""))        /* TB3 btn-xs */
+            "btn btn-xs css_cmd " + (col.visible ? "active" : ""))        /* TB3 btn-xs */
         .attribute("type", "button")
         .attribute("data-toggle", "button")
         .addText(col.label);
