@@ -1007,7 +1007,7 @@ module.exports.define("getPrimaryRow", function () {
 
 /**
 * Returns the minimal query string referencing this page, including its page_key if it has one
-* @return Relative URL, i.e. '{skin}?page_id={page id}[&page_key={page key}]'
+* @return Relative URL, i.e. '{skin}#page_id={page id}[&page_key={page key}]'
 */
 module.exports.define("getSimpleURL", function (override_key) {
     var page_key = override_key || this.page_key;
