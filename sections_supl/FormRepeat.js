@@ -56,7 +56,7 @@ module.exports.define("setupRowControl", function () {
             session: this.owner.page.session,
             dropdown_label: "Action",
             dropdown_button: true,
-            dropdown_css_class: "btn-mini",
+            dropdown_css_class: "btn-xs",
         });
     }
 });

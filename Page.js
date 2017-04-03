@@ -804,7 +804,7 @@ module.exports.define("renderSections", function (page_elem, render_opts, page_t
                 && (render_opts.all_sections || !tab || section.tab === page_tab_id)) {
             row_span += section.tb_span;
             if (!div_elem || row_span > 12) {
-                div_elem = sections_elem.makeElement("div", "row-fluid");
+                div_elem = sections_elem.makeElement("div", "row");
                 row_span = section.tb_span;
             }
             section.render(div_elem, render_opts);

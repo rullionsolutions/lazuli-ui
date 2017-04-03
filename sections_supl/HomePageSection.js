@@ -27,7 +27,7 @@ module.exports.override("getSectionElement", function (render_opts) {
                 anchor.attribute("href", this.section_heading_url);
             }
             if (this.glyphicon) {
-                anchor.addChild("i", null, "icon-large " + this.glyphicon);
+                anchor.addChild("i", null, "glyphicon glyphicon-" + this.glyphicon);
             }
             anchor.addText(temp_title);
         }

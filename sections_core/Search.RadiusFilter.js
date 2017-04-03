@@ -8,7 +8,7 @@ var Data = require("lazuli-data/index.js");
 
 module.exports = UI.Search.Filter.clone({
     id: "Search.RadiusFilter",
-    filt_field_tb_input: "input-small",
+    filt_field_tb_input: "input-sm",
     initial_distance: 50,           // km
 });
 
@@ -22,7 +22,7 @@ module.exports.override("clone", function (spec) {
             id: spec.id + "_filt2",
             type: "Number",
             editable: true,
-            tb_input: "input-mini",
+            tb_input: "input-sm",
         });
         filter.filt_field2.set(this.initial_distance);
     } else {
