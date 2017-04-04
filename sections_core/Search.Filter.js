@@ -19,6 +19,7 @@ module.exports.override("clone", function (spec) {
             id: spec.id + "_oper",
             type: "Option",
             tb_input: "input-medium",
+            render_radio: false,
             list: spec.base_field.search_oper_list,
             auto_search_oper: spec.base_field.auto_search_oper,
             dflt_search_oper: spec.base_field.dflt_search_oper,

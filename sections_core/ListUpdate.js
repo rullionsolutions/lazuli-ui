@@ -128,6 +128,7 @@ module.exports.define("setupAddRowField", function (add_row_field_id, add_row_un
         tb_input: "input-medium",
         editable: true,
         css_reload: true,
+        render_radio: false,
         input_group_addon_before: this.add_row_label,
         list: orig_add_row_field.list,
         ref_entity: orig_add_row_field.ref_entity,

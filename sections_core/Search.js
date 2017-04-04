@@ -49,6 +49,7 @@ module.exports.defbind("setupAddCriteriaField", "setup", function () {
         label: "Add another criterion",
         tb_input: "input-large",
         editable: true,
+        render_radio: false,
         css_reload: true,
     });
     this.add_criterion_field.getLoV().blank_label = "Add new filter...";
