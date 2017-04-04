@@ -125,7 +125,8 @@ module.exports.define("setupAddRowField", function (add_row_field_id, add_row_un
     this.add_row_field_obj = Data.Option.clone({
         id: "add_row_field_" + this.id,           // Autocompleter doesn't work here yet
         label: this.add_row_label,
-        tb_input: "input-sm",
+        // tb_input: "input-sm",
+        input_group_size: "input-group-sm",
         editable: true,
         css_reload: true,
         render_radio: false,
@@ -387,12 +388,9 @@ module.exports.override("renderRowAdder", function (foot_elem, render_opts) {
             // this.add_row_field_obj.renderControl(ctrl_elem, render_opts);
         } else {
             ctrl_elem = foot_elem.addChild("span", null, "css_list_add");
-            ctrl_elem.addChild("a", "list_add_" + this.id, "css_cmd btn btn-xs")
-                .attribute("title", "Add another row")
-                .addText(this.add_row_icon, true);
-            // ctrl_elem.addChild("a", "list_add_" + this.id, "css_cmd css_uni_icon_lrg")
-            //     .attribute("title", this.add_row_label)
-            //     .addText(this.add_row_icon, true);
+            ctrl_elem.makeElement("a", "css_cmd btn btn-xs", "list_add_" + this.id)
+                .attr("title", "Add another row")
+                .text(this.add_row_icon, true);
         }
     }
     return ctrl_elem;

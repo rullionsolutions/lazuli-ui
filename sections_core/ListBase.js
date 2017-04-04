@@ -706,8 +706,8 @@ module.exports.define("renderColumnChooser", function (foot_elem, render_opts) {
     if (this.allow_choose_cols) {
         ctrl_elem = foot_elem.makeElement("div", "css_list_choose_cols" + (this.show_choose_cols ? "" : " css_hide"));
         filter_elem = ctrl_elem.makeElement("span", "css_list_cols_filter");
-        filter_elem.makeInput("text", "cols_filter_" + this.id, this.cols_filter, "css_list_cols_filter input-medium")
-            .attr("placeholder", "Filter Columns");
+        filter_elem.makeInput("text", "cols_filter_" + this.id, this.cols_filter,
+            "css_list_cols_filter form-control input-sm", "Filter Columns");
 
         for (i = 0; i < this.columns.length(); i += 1) {
             this.renderColumnChooserColumn(ctrl_elem, render_opts, this.columns.get(i));
