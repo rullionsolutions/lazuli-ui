@@ -572,7 +572,7 @@ module.exports.define("sendEmails", function () {
 * @return New workflow instance object
 */
 module.exports.define("instantiateWorkflow", function (record, wf_tmpl_id, wf_inst_ref_field) {
-    var wf_inst = Data.entities.get("wf_inst").instantiate(this.getTrans(), wf_tmpl_id, record.getKey());
+    var wf_inst = Data.entities.get("ac_wf_inst").instantiate(this.getTrans(), wf_tmpl_id, record.getKey());
     wf_inst.first_node.getField("page").set(this.id);        // First node's page is just set to current page
     wf_inst.first_node.getField("title").set(this.title);
 //    if (wf_inst.first_node.getField("page").get() !== this.id) {
@@ -1041,7 +1041,7 @@ module.exports.define("addPerformingWorkflowNode", function (inst_id, node_id) {
     }
 
     this.debug("addPerformingWorkflowNode, inst_id: " + inst_id + ", node_id: " + node_id);
-    wf_inst = Data.entities.get("wf_inst").retrieve(this.getTrans(), inst_id);
+    wf_inst = Data.entities.get("ac_wf_inst").retrieve(this.getTrans(), inst_id);
     inst_node = wf_inst.getNode(node_id);
     inst_node.page = this;
     this.performing_wf_nodes.push(inst_node);
