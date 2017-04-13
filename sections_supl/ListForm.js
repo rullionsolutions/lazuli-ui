@@ -3,32 +3,24 @@
 var UI = require("lazuli-ui/index.js");
 
 
-module.exports = UI.ListBase.clone({
+module.exports = UI.ItemSet.clone({
     id: "ListForm",
-});
-
-
-module.exports.define("renderRepeat", function (parent_elmt, render_opts) {
-    while (this.query.next()) {
-        this.record.populate(this.query.resultset);
-        this.renderRow(parent_elmt, render_opts, this.record);
-    }
-    this.query.reset();
+    main_tag: "div",
+    layout: "form-horizontal",
+    hide_blank_uneditable_fields: true,
 });
 
 
 /**
-* To render an object (usually a fieldset) as a form block, using FormBase.render()
-*(not implemented)
-* @param element (xmlstream), render_opts, row_obj
-* @returns the return value of FormBase.render()
+* To render an object (usually a fieldset) as a form block
+* @param element (xmlstream), render_opts, fieldset
 */
-module.exports.define("renderRow", function (parent_elmt, render_opts, row_obj) {
-    this.fieldset = row_obj;
-    return UI.FormBase.render.call(this, parent_elmt, render_opts);
-});
-
-
-module.exports.define("getRepeatFormText", function (row_obj) {
-    return null;
+module.exports.override("renderItem", function (parent_elmt, render_opts, fieldset) {
+    var that = this;
+    var form_elem = parent_elmt.makeElement("form", fieldset.getTBFormType(that.layout));
+    fieldset.each(function (field) {
+        if (field.isVisible(that.field_group, that.hide_blank_uneditable_fields)) {
+            field.renderFormGroup(form_elem, render_opts, that.layout);
+        }
+    });
 });
