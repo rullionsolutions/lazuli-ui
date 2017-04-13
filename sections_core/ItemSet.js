@@ -56,7 +56,7 @@ module.exports.define("setupEntity", function (entity_id) {
 });
 
 
-module.exports.defbind("initializeEntity", "cloneInstance", function () {
+module.exports.defbind("initializeEntity", "setup", function () {
     if (typeof this.entity_id === "string") {
         this.setupEntity(this.entity_id);
     } else if (typeof this.entity === "string") {        // 'entity' as a string property is deprecated
@@ -70,7 +70,7 @@ module.exports.define("setupParentRecord", function (parent_record) {
 });
 
 
-module.exports.defbind("initializeParentRecord", "cloneInstance", function () {
+module.exports.defbind("initializeParentRecord", "setup", function () {
     if (!this.parent_record && this.entity && this.link_field) {
         if (this.owner.page.page_key_entity && this.entity.getField(this.link_field).ref_entity
                 === this.owner.page.page_key_entity.id) {
@@ -148,7 +148,7 @@ module.exports.define("getAdderItem", function (val) {
 });
 
 
-module.exports.defbind("initializeItemAdder", "cloneInstance", function () {
+module.exports.defbind("initializeItemAdder", "setup", function () {
     if (this.add_item_field_id && this.entity) {
         this.setupItemAdder(this.add_item_field_id, this.add_item_unique);
     } else if (this.add_item_field && this.entity) {            // deprecated and replaced...
@@ -175,7 +175,7 @@ module.exports.define("setupItemDeleterField", function () {
 });
 
 
-module.exports.defbind("initializeItemDeleter", "cloneInstance", function () {
+module.exports.defbind("initializeItemDeleter", "setup", function () {
     this.setupItemDeleterField();
 });
 
@@ -237,7 +237,7 @@ module.exports.define("load", function () {
 });
 
 
-module.exports.defbind("initializeLoad", "cloneInstance", function () {
+module.exports.defbind("initializeLoad", "setup", function () {
     if (this.auto_fill !== false && !this.load_query) {
         if (this.load_entity_id) {
             this.setupLoadQuery(Data.entities.get(this.load_entity_id));
@@ -308,7 +308,7 @@ module.exports.override("isValid", function () {
 module.exports.define("makeItemFromSpec", function (spec) {
     var record;
     if (spec.key) {
-        record = this.createNewOrExistingRecordWithKey(spec.record_key);
+        record = this.createNewOrExistingRecordWithKey(spec.key);
     } else if (spec.field_id && spec.field_val) {
         record = this.createNewRecordWithField(spec.field_id, spec.field_val);
     } else if (spec.add_blank_item) {
@@ -378,6 +378,8 @@ module.exports.defbind("afterAddItem", "addItem", function (item) {
     }
     item.id_prefix = this.id + "_" + this.items.length;
     item.linkToParent(this.parent_record, this.link_field);
+
+    this.debug("is page an instance? " + this.owner.page.instance + ", " + this.owner.page.page_key + ", " + this.owner.page.fields);
     if (item.page !== this.owner.page) {
         item.addToPage(this.owner.page);
     }
