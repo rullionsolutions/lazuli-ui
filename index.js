@@ -30,6 +30,7 @@ exports.sections.add(exports.Delete = require("lazuli-ui/sections_core/Delete.js
 exports.sections.add(exports.Display = require("lazuli-ui/sections_core/Display.js"));
 exports.sections.add(exports.Update = require("lazuli-ui/sections_core/Update.js"));
 
+exports.sections.add(exports.ItemSet = require("lazuli-ui/sections_core/ItemSet.js"));
 exports.sections.add(exports.ListBase = require("lazuli-ui/sections_core/ListBase.js"));
 exports.ListBase.Column = require("lazuli-ui/sections_core/ListBase.Column.js");
 exports.sections.add(exports.ListQuery = require("lazuli-ui/sections_core/ListQuery.js"));
@@ -56,13 +57,15 @@ exports.sections.add(exports.Chart = require("lazuli-ui/sections_supl/Chart.js")
 exports.sections.add(exports.FormRepeat = require("lazuli-ui/sections_supl/FormRepeat.js"));
 exports.sections.add(exports.HomePageSection = require("lazuli-ui/sections_supl/HomePageSection.js"));
 exports.sections.add(exports.SideBySide = require("lazuli-ui/sections_supl/SideBySide.js"));
+// exports.sections.add(exports.ListForm = require("lazuli-ui/sections_supl/ListForm.js"));
 exports.sections.add(exports.ListObjects = require("lazuli-ui/sections_supl/ListObjects.js"));
 exports.sections.add(exports.TemplateUpdate = require("lazuli-ui/sections_supl/TemplateUpdate.js"));
-exports.sections.add(exports.Tiles = require("lazuli-ui/sections_supl/TileGrid.js"));
+exports.sections.add(exports.TileGrid = require("lazuli-ui/sections_supl/TileGrid.js"));
 exports.sections.add(exports.Tiles = require("lazuli-ui/sections_supl/Tiles.js"));
 
 exports.sections.add(exports.ExportHistory = require("lazuli-ui/sections_supl/ExportHistory.js"));
 exports.sections.add(exports.FlexUpdate = require("lazuli-ui/sections_supl/FlexUpdate.js"));
+exports.sections.add(exports.ListForm = require("lazuli-ui/sections_supl/ListForm.js"));
 exports.sections.add(exports.ListItems = require("lazuli-ui/sections_supl/ListItems.js"));
 
 
