@@ -378,8 +378,6 @@ module.exports.defbind("afterAddItem", "addItem", function (item) {
     }
     item.id_prefix = this.id + "_" + this.items.length;
     item.linkToParent(this.parent_record, this.link_field);
-
-    this.debug("is page an instance? " + this.owner.page.instance + ", " + this.owner.page.page_key + ", " + this.owner.page.fields);
     if (item.page !== this.owner.page) {
         item.addToPage(this.owner.page);
     }
@@ -481,7 +479,7 @@ module.exports.defbind("renderItemAdder", "renderAfterItems", function (render_o
         this.add_item_field.renderFormGroup(foot_elmt, render_opts, "table-cell");
     } else {
         foot_elmt.makeElement("span", "css_list_add")
-            .makeElement("a", "css_cmd btn btn-xs", "list_add_" + this.id)
+            .makeElement("a", "css_cmd btn btn-default btn-xs", "list_add_" + this.id)
             .attr("title", this.add_item_label)
             .text(this.add_item_icon, true);
     }
@@ -500,10 +498,10 @@ module.exports.defbind("renderListPager", "renderAfterItems", function (render_o
     }
     ctrl_elem = foot_elmt.makeElement("span", "btn-group css_item_pager");
     if (this.itemset > 1) {
-        ctrl_elem.makeElement("a", "css_cmd btn btn-mini", "list_set_frst_" + this.id)
+        ctrl_elem.makeElement("a", "css_cmd btn btn-default btn-xs", "list_set_frst_" + this.id)
             .attr("title", "first itemset")
             .text(this.frst_itemset_icon, true);
-        ctrl_elem.makeElement("a", "css_cmd btn btn-mini", "list_set_prev_" + this.id)
+        ctrl_elem.makeElement("a", "css_cmd btn btn-default btn-xs", "list_set_prev_" + this.id)
             .attr("title", "previous itemset")
             .text(this.prev_itemset_icon, true);
     }
@@ -515,19 +513,19 @@ module.exports.defbind("renderListPager", "renderAfterItems", function (render_o
     if (this.subsequent_itemset || this.itemset > 1) {
         ctrl_elem
             .makeElement("span", "css_list_itemcount")
-            .makeElement("a", "css_cmd btn btn-mini", "list_set_extend_" + this.id)
+            .makeElement("a", "css_cmd btn btn-default btn-xs", "list_set_extend_" + this.id)
             .attr("title", "expand this itemset by " + this.itemset_size_ext + " items")
             .text(this.extd_itemset_icon, true);
     }
     if (this.subsequent_itemset) {
         ctrl_elem
-            .makeElement("a", "css_cmd btn btn-mini", "list_set_next_" + this.id)
+            .makeElement("a", "css_cmd btn btn-default btn-xs", "list_set_next_" + this.id)
             .attr("title", "next itemset")
             .text(this.next_itemset_icon, true);
     }
     if (this.subsequent_itemset && !this.open_ended_itemset) {
         ctrl_elem
-            .makeElement("a", "css_cmd btn btn-mini", "list_set_last_" + this.id)
+            .makeElement("a", "css_cmd btn btn-default btn-xs", "list_set_last_" + this.id)
             .attr("title", "last itemset")
             .text(this.last_itemset_icon, true);
     }

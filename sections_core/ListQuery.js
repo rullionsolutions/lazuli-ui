@@ -103,7 +103,7 @@ module.exports.define("addRowControlColumn", function () {
             session: this.owner.page.session,
             dropdown_label: "Action",
             dropdown_button: true,
-            dropdown_css_class: "btn-mini",
+            dropdown_css_class: "btn-default btn-xs",
             dropdown_right_align: true,
         }),
     });
@@ -712,27 +712,35 @@ module.exports.override("renderListPager", function (foot_elem, render_opts) {
     if (this.list_advanced_mode) {
         ctrl_elem = foot_elem.addChild("span", null, "css_list_level_break_chooser btn-group");
 
-        ctrl_elem.addChild("a", "list_level_break_" + this.id + "_0", "css_cmd btn btn-mini" + (this.level_break_depth === 0 ? " active" : ""))
+        ctrl_elem.addChild("a", "list_level_break_" + this.id + "_0", "css_cmd btn btn-default btn-xs" +
+            (this.level_break_depth === 0 ? " active" : ""))
             .attribute("title", "No Grouping")
             .addText(this.group_level_0_icon, true);
 
-        ctrl_elem.addChild("a", "list_level_break_" + this.id + "_1", "css_cmd btn btn-mini" + (this.level_break_depth === 1 ? " active" : ""))
+        ctrl_elem.addChild("a", "list_level_break_" + this.id + "_1", "css_cmd btn btn-default btn-xs" +
+            (this.level_break_depth === 1 ? " active" : ""))
             .attribute("title", "Group on first Sort Column")
             .addText(this.group_level_1_icon, true);
 
-        ctrl_elem.addChild("a", "list_level_break_" + this.id + "_2", "css_cmd btn btn-mini" + (this.level_break_depth === 2 ? " active" : ""))
+        ctrl_elem.addChild("a", "list_level_break_" + this.id + "_2", "css_cmd btn btn-default btn-xs" +
+            (this.level_break_depth === 2 ? " active" : ""))
             .attribute("title", "Group on first 2 Sort Columns")
             .addText(this.group_level_2_icon, true);
 
-        ctrl_elem.addChild("a", "list_level_break_" + this.id + "_3", "css_cmd btn btn-mini" + (this.level_break_depth === 3 ? " active" : ""))
+        ctrl_elem.addChild("a", "list_level_break_" + this.id + "_3", "css_cmd btn btn-default btn-xs" +
+            (this.level_break_depth === 3 ? " active" : ""))
             .attribute("title", "Group on first 3 Sort Columns")
             .addText(this.group_level_3_icon, true);
 
         if (this.level_break_depth > 0) {
             if (this.hide_detail_rows) {
-                ctrl_elem.addChild("a", "list_show_detail_rows_" + this.id, "css_cmd btn btn-mini").addChild("i", null, "icon-eye-open");
+                ctrl_elem
+                    .addChild("a", "list_show_detail_rows_" + this.id, "css_cmd btn btn-default btn-xs")
+                    .addChild("i", null, "glyphicon glyphicon-eye-open");
             } else {
-                ctrl_elem.addChild("a", "list_hide_detail_rows_" + this.id, "css_cmd btn btn-mini").addChild("i", null, "icon-eye-close");
+                ctrl_elem
+                    .addChild("a", "list_hide_detail_rows_" + this.id, "css_cmd btn btn-default btn-xs")
+                    .addChild("i", null, "glyphicon glyphicon-eye-close");
             }
         }
     }

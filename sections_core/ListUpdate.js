@@ -10,8 +10,8 @@ module.exports = UI.ListBase.clone({
     id: "ListUpdate",
     allow_add_rows: true,
     allow_delete_rows: true,
-    add_row_icon: "<i class='icon-plus'></i>",       // ordinary plus ; "&#x2795;" heavy plus sign
-    delete_row_icon: "<i class='icon-remove'></i>",     // ordinary cross; "&#x274C;" heavy cross mark
+    add_row_icon: "<i class='glyphicon glyphicon-plus'></i>",       // ordinary plus ; "&#x2795;" heavy plus sign
+    delete_row_icon: "<i class='glyphicon glyphicon-remove'></i>",     // ordinary cross; "&#x274C;" heavy cross mark
     add_row_label: "Add a new row",
     delete_row_label: "Remove this row",
 });
@@ -90,7 +90,7 @@ module.exports.define("addDeleteControlColumn", function () {
         if (this.visible) {
             cell_elem = row_elem.makeElement("td", this.css_class);
             if (this.allow_delete !== false) {      // support individual rows not deletable
-                cell_elem.addChild("a", "list_delete_" + that.id + "_" + that.rows.indexOf(row_obj), "css_cmd btn btn-mini")
+                cell_elem.addChild("a", "list_delete_" + that.id + "_" + that.rows.indexOf(row_obj), "css_cmd btn btn-default btn-xs")
                     .attr("title", that.delete_row_label)
                     .text(that.delete_row_icon, true);
             }
@@ -125,7 +125,8 @@ module.exports.define("setupAddRowField", function (add_row_field_id, add_row_un
     this.add_row_field_obj = Data.Option.clone({
         id: "add_row_field_" + this.id,           // Autocompleter doesn't work here yet
         label: this.add_row_label,
-        tb_input: "input-medium",
+        // tb_input: "input-sm",
+        input_group_size: "input-group-sm",
         editable: true,
         css_reload: true,
         render_radio: false,
@@ -387,12 +388,9 @@ module.exports.override("renderRowAdder", function (foot_elem, render_opts) {
             // this.add_row_field_obj.renderControl(ctrl_elem, render_opts);
         } else {
             ctrl_elem = foot_elem.addChild("span", null, "css_list_add");
-            ctrl_elem.addChild("a", "list_add_" + this.id, "css_cmd btn btn-mini")
-                .attribute("title", "Add another row")
-                .addText(this.add_row_icon, true);
-            // ctrl_elem.addChild("a", "list_add_" + this.id, "css_cmd css_uni_icon_lrg")
-            //     .attribute("title", this.add_row_label)
-            //     .addText(this.add_row_icon, true);
+            ctrl_elem.makeElement("a", "css_cmd btn btn-default btn-xs", "list_add_" + this.id)
+                .attr("title", "Add another row")
+                .text(this.add_row_icon, true);
         }
     }
     return ctrl_elem;

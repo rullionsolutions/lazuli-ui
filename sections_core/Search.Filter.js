@@ -6,7 +6,7 @@ var SQL = require("lazuli-sql/index.js");
 
 module.exports = Core.Base.clone({
     id: "Search.Filter",
-    filt_field_tb_input: "input-large",
+    filt_field_tb_input: "input-sm",
     table_alias: "A",
     remove_filter_icon: "&times;",        // ordinary cross sign; "&#x274C;" heavy cross mark
 });
