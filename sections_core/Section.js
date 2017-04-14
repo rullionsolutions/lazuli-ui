@@ -120,7 +120,7 @@ module.exports.define("getSectionElement", function (render_opts) {
 * @return String content of the div element's CSS class attribute"
 */
 module.exports.define("getCSSClass", function (render_opts) {
-    var css_class = "css_section css_section_" + (this.css_type_override || this.type) + " span" + /* TB3: " col-md-" +*/ this.tb_span;
+    var css_class = "css_section css_section_" + (this.css_type_override || this.type) + " col-md-" + this.tb_span;
     if (this.right_align_numbers) {
         css_class += " css_right_align_numbers";
     }

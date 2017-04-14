@@ -31,7 +31,7 @@ module.exports.override("getSectionElement", function (render_opts) {
                 anchor.attribute("href", this.section_heading_url);
             }
             if (this.glyphicon) {
-                anchor.addChild("i", null, "icon-large " + this.glyphicon);
+                anchor.addChild("i", null, "glyphicon glyphicon-" + this.glyphicon);
             }
             anchor.addText(temp_title);
         }
@@ -96,12 +96,7 @@ module.exports.define("renderSingleBadgeLine", function (element, props) {
     if (typeof props.show_max === "number" && props.number > props.show_max) {
         return null;
     }
-    element = element.makeElement("p");
 
-    if (props.url && this.owner.page.session.allowedURL(props.url)) {
-        element = element.makeAnchor(props.anchor_pre_label, props.url,
-            props.anchor_css_class, null, props.hover_text, props.target);
-    }
     for (i = 0; i < badge_types.length && !badge_class; i += 1) {
         min_exist = (typeof props[badge_types[i] + "_min"] === "number");
         max_exist = (typeof props[badge_types[i] + "_max"] === "number");
@@ -109,12 +104,24 @@ module.exports.define("renderSingleBadgeLine", function (element, props) {
         le_max = (props.number <= props[badge_types[i] + "_max"]);
         if ((min_exist && !max_exist && ge_min) || (max_exist && !min_exist && le_max)
                 || (min_exist && max_exist && ge_min && le_max)) {
-            badge_class = " badge-" + badge_types[i];
+            badge_class = badge_types[i];
         }
     }
-    element.makeElement("span", "badge" + badge_class).text(String(props.number));
+    if (badge_class === "important") {
+        badge_class = "danger";
+    }
+    badge_class = " list-group-item list-group-item-" + badge_class;
+    if (props.url && this.owner.page.session.allowedURL(props.url)) {
+        props.anchor_css_class = (props.anchor_css_class || "") + badge_class;
+        element = element.makeAnchor(props.anchor_pre_label, props.url,
+            props.anchor_css_class, null, props.hover_text, props.target);
+    } else {
+        element = element.makeElement("li", badge_class);
+    }
+    element.makeElement("span", "badge" /* + badge_class*/).text(String(props.number));
     if (props.text) {
         element.text("&nbsp;" + props.text);
+        // element.makeElement("span", "label label-" + badge_class).text(props.text);
     }
     return element;
 });
