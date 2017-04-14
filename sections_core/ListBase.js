@@ -539,7 +539,7 @@ module.exports.define("renderBulk", function (foot_elem, render_opts) {
         if (that.bulk_actions[key].visible && UI.pages.get(that.bulk_actions[key].target_page)) {
             cell_elem.makeAnchor(that.bulk_actions[key].button_label,
                 "modal?page_id=" + that.bulk_actions[key].target_page + "&page_key=" + that.owner.page.page_key,
-                "btn btn-xs css_bulk disabled");
+                "btn btn-default btn-xs css_bulk disabled");
 
             // cell_elem.addChild("a", null, "btn btn-xs css_bulk css_open_in_modal disabled")
             //     .attribute("href", "?page_id=" + value.target_page + "&page_key=" +
@@ -580,7 +580,7 @@ module.exports.define("renderFooter", function (table_elem, render_opts) {
             if (this.list_advanced_mode && this.allow_choose_cols) {
                 ctrl_elem = cell_elem.makeElement("span", "css_list_col_chooser");
                 ctrl_elem.attribute("onclick", "x.ui.listColumnChooser(this)");
-                ctrl_elem.addChild("a", "list_choose_cols_" + this.id, "btn btn-xs")
+                ctrl_elem.addChild("a", "list_choose_cols_" + this.id, "btn btn-default btn-xs")
                     .attribute("title", "Choose Columns to View")
                     .addText(this.column_chooser_icon, true);
                 this.renderColumnChooser(cell_elem, render_opts);
@@ -611,28 +611,28 @@ module.exports.define("renderRowAdder", function (foot_elem, render_opts) {
 module.exports.define("renderListPager", function (foot_elem, render_opts) {
     var ctrl_elem = foot_elem.addChild("span", null, "css_row_pager btn-group");
     if (this.recordset > 1) {
-        ctrl_elem.addChild("a", "list_set_frst_" + this.id, "css_cmd btn btn-xs")
+        ctrl_elem.addChild("a", "list_set_frst_" + this.id, "css_cmd btn btn-default btn-xs")
             .attribute("title", "first recordset")
             .addText(this.frst_recordset_icon, true);
-        ctrl_elem.addChild("a", "list_set_prev_" + this.id, "css_cmd btn btn-xs")
+        ctrl_elem.addChild("a", "list_set_prev_" + this.id, "css_cmd btn btn-default btn-xs")
             .attribute("title", "previous recordset")
             .addText(this.prev_recordset_icon, true);
     }
-    this.renderRowCount(ctrl_elem.addChild("a", null, "btn btn-xs disabled css_list_rowcount"), render_opts);
+    this.renderRowCount(ctrl_elem.addChild("a", null, "btn btn-default btn-xs disabled css_list_rowcount"), render_opts);
     // ctrl_elem = pagr_elem.addChild("span", null, "css_list_control");
 
     if (this.subsequent_recordset || this.recordset > 1) {
-        ctrl_elem.addChild("a", "list_set_extend_" + this.id, "css_cmd btn btn-xs")
+        ctrl_elem.addChild("a", "list_set_extend_" + this.id, "css_cmd btn btn-default btn-xs")
             .attribute("title", "expand this recordset by " + this.recordset_size_ext + " rows")
             .addText(this.extd_recordset_icon, true);
     }
     if (this.subsequent_recordset) {
-        ctrl_elem.addChild("a", "list_set_next_" + this.id, "css_cmd btn btn-xs")
+        ctrl_elem.addChild("a", "list_set_next_" + this.id, "css_cmd btn btn-default btn-xs")
             .attribute("title", "next recordset")
             .addText(this.next_recordset_icon, true);
     }
     if (this.subsequent_recordset && !this.open_ended_recordset) {
-        ctrl_elem.addChild("a", "list_set_last_" + this.id, "css_cmd btn btn-xs")
+        ctrl_elem.addChild("a", "list_set_last_" + this.id, "css_cmd btn btn-default btn-xs")
             .attribute("title", "last recordset")
             .addText(this.last_recordset_icon, true);
     }
@@ -651,15 +651,15 @@ module.exports.define("renderColumnPager", function (foot_elem, render_opts) {
     }
     ctrl_elem = foot_elem.addChild("span", null, "css_column_pager btn-group");
     if (this.current_column_page > 0) {
-        ctrl_elem.addChild("a", "column_page_prev_" + this.id, "css_cmd btn btn-xs")
+        ctrl_elem.addChild("a", "column_page_prev_" + this.id, "css_cmd btn btn-default btn-xs")
             .attribute("title", "previous column page")
             .addText(this.prev_columnset_icon, true);
     }
-    ctrl_elem.addChild("a", null, "btn btn-xs disabled css_list_colcount",
+    ctrl_elem.addChild("a", null, "btn btn-default btn-xs disabled css_list_colcount",
         "column page " + (this.current_column_page + 1) + " of " + this.total_column_pages);
 
     if ((this.current_column_page + 1) < this.total_column_pages) {
-        ctrl_elem.addChild("a", "column_page_next_" + this.id, "css_cmd btn btn-xs")
+        ctrl_elem.addChild("a", "column_page_next_" + this.id, "css_cmd btn btn-default btn-xs")
             .attribute("title", "next column page")
             .addText(this.next_columnset_icon, true);
     }
@@ -721,7 +721,7 @@ module.exports.define("renderColumnChooserColumn", function (ctrl_elem, render_o
         return;
     }
     ctrl_elem.addChild("button", "list_" + this.id + "_col_" + col.id + (col.visible ? "_hide" : "_show"),
-            "btn btn-xs css_cmd " + (col.visible ? "active" : ""))        /* TB3 btn-xs */
+            "btn btn-default btn-xs css_cmd " + (col.visible ? "active" : ""))        /* TB3 btn-xs */
         .attribute("type", "button")
         .attribute("data-toggle", "button")
         .addText(col.label);

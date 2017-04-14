@@ -90,7 +90,7 @@ module.exports.define("addDeleteControlColumn", function () {
         if (this.visible) {
             cell_elem = row_elem.makeElement("td", this.css_class);
             if (this.allow_delete !== false) {      // support individual rows not deletable
-                cell_elem.addChild("a", "list_delete_" + that.id + "_" + that.rows.indexOf(row_obj), "css_cmd btn btn-xs")
+                cell_elem.addChild("a", "list_delete_" + that.id + "_" + that.rows.indexOf(row_obj), "css_cmd btn btn-default btn-xs")
                     .attr("title", that.delete_row_label)
                     .text(that.delete_row_icon, true);
             }
@@ -388,7 +388,7 @@ module.exports.override("renderRowAdder", function (foot_elem, render_opts) {
             // this.add_row_field_obj.renderControl(ctrl_elem, render_opts);
         } else {
             ctrl_elem = foot_elem.addChild("span", null, "css_list_add");
-            ctrl_elem.makeElement("a", "css_cmd btn btn-xs", "list_add_" + this.id)
+            ctrl_elem.makeElement("a", "css_cmd btn btn-default btn-xs", "list_add_" + this.id)
                 .attr("title", "Add another row")
                 .text(this.add_row_icon, true);
         }

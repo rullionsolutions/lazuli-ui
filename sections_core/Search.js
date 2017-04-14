@@ -221,10 +221,10 @@ module.exports.define("renderSearch", function (render_opts, parent_elem) {
         div_elem = parent_elem.makeElement("div", "css_search_control form-inline");
         div_elem.makeElement("button", "css_cmd btn btn-primary css_button_main", "page_search").text("Search");
         if (this.search_control !== "S") {
-            div_elem.makeElement("button", "css_cmd btn", "page_reset").text("Reset");
+            div_elem.makeElement("button", "css_cmd btn btn-default", "page_reset").text("Reset");
         }
         if (this.search_control === "A") {
-            div_elem.makeElement("button", "css_cmd btn" + (this.search_advanced_mode ? " active" : ""), "page_mode")
+            div_elem.makeElement("button", "css_cmd btn btn-default" + (this.search_advanced_mode ? " active" : ""), "page_mode")
                 .attr("data-toggle", "button")
                 .text("Advanced Mode");
             if (this.search_advanced_mode) {
