@@ -18,6 +18,7 @@ module.exports = Core.Base.clone({
     tab_forward_only: false,
     allow_no_modifications: false,
     record_parameters: true,
+    keep_after_nav_away: false,
     skin: "index.html",
     internal_state: 0,
 //    page_tab: 0
@@ -197,12 +198,17 @@ module.exports.define("allowed", function (session, page_key, cached_record) {
         page_key: page_key,
         reason: "no security rule found",
         toString: function () {
-            return this.text + " to " + this.page_id + ":" + (this.page_key || "[no key]") + " for " + this.user_id + " because " + this.reason;
+            return this.text + " to " + this.page_id + ":" + (this.page_key || "[no key]") +
+                " for " + this.user_id + " because " + this.reason;
         },
     };
 
     this.checkBasicSecurity(session, allowed);
 
+    if ((page_key && !this.requires_key) || (!page_key && this.requires_key)) {
+        allowed.reason = (page_key ? "page_key NOT required" : "page_key required");
+        allowed.access = false;
+    }
     if (this.wf_type && page_key && session.allowedPageTask(this.id, page_key, allowed)) {
         allowed.access = true;
     } else if (this.workflow_only) {            // Workflow-only page
@@ -261,6 +267,14 @@ module.exports.define("checkRecordSecurity", function (session, page_key, cached
 * @param params: object map of strings
 */
 module.exports.define("update", function (params) {
+    if (this.internal_state !== 29 && this.internal_state !== 39) {
+        this.throwError({
+            type: "E",
+            id: "invalid_update_entry_state",
+            internal_state: this.internal_state,
+            message: "this page is still processing - please try again later",
+        });
+    }
     this.internal_state = 30;
     this.session.newVisit(this.id, this.getPageTitle(), this.record_parameters ? params : null,
         this.page_key);
@@ -1080,8 +1094,13 @@ module.exports.define("setRedirectUrl", function (obj, params) {
 
 
 module.exports.define("keepAfterNavAway", function () {
-    if (typeof this.keep_after_nav_away === "boolean") {
-        return this.keep_after_nav_away;
+    return this.keep_after_nav_away;
+});
+
+
+module.exports.define("isMainNavigation", function () {
+    if (typeof this.main_navigation === "boolean") {
+        return this.main_navigation;
     }
-    return this.transactional;
+    return !this.transactional;
 });
