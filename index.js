@@ -75,3 +75,5 @@ exports.ContextPage = require("lazuli-ui/ContextPage.js");
 exports.ConfirmPage = require("lazuli-ui/ConfirmPage.js");
 exports.BulkActionPage = require("lazuli-ui/BulkActionPage.js");
 exports.sy_bulk_action = exports.BulkActionPage;        // backward compatibility
+exports.ReportPage = require("lazuli-ui/ReportPage.js");
+exports.SearchPage = require("lazuli-ui/SearchPage.js");
