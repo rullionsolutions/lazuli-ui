@@ -41,16 +41,13 @@ module.exports.define("getURL", function (override_key) {
     var page_to = this.getToPage();
 
     if (page_to) {
-        url = page_to.skin + "?page_id=" + page_to.id;
-        if (this.page_key) {
-            url += "&page_key=" + this.getKey(override_key);
-        }
+        url = page_to.getSimpleURL(this.getKey(override_key));
     }
     if (this.url) {
-        if (url) {
-            url += (url.indexOf("?") > -1) ? "&" : "?";
-        }
-        url += this.url;
+        // if (url) {
+        //     url += (url.indexOf("?") > -1) ? "&" : "?";
+        // }
+        url += "&" + this.url;
     }
     url = url.replace("{page_key}", (override_key || this.owner.page.page_key));
     return url;

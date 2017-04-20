@@ -18,6 +18,7 @@ module.exports = Core.Base.clone({
     tab_forward_only: false,
     allow_no_modifications: false,
     record_parameters: true,
+    keep_after_nav_away: false,
     skin: "index.html",
     internal_state: 0,
 //    page_tab: 0
@@ -93,19 +94,11 @@ module.exports.defbind("clonePage", "clone", function () {
 module.exports.define("setup", function () {
     var i;
     this.internal_state = 20;
+    this.debug("starting setup");
     if (!this.session) {
         this.throwError("no session property supplied");
     }
     this.internal_state = 21;
-    if (this.allowed && this.allowed.one_time_guest_wf_access) {
-        this.skin = "guest.html";
-        // Redirect to 'thank you' page if one time guest access
-        this.exit_url_save = "?page_id=wf_inst_node_one_time_exit";
-        if (this.performing_wf_nodes && this.performing_wf_nodes[0]) {
-            this.exit_url_save += "&page_key=" + this.performing_wf_nodes[0].getKey();
-        }
-    }
-    this.internal_state = 22;
     this.happen("setupStart");
     this.internal_state = 23;
     this.getPrimaryRow();
@@ -205,12 +198,17 @@ module.exports.define("allowed", function (session, page_key, cached_record) {
         page_key: page_key,
         reason: "no security rule found",
         toString: function () {
-            return this.text + " to " + this.page_id + ":" + (this.page_key || "[no key]") + " for " + this.user_id + " because " + this.reason;
+            return this.text + " to " + this.page_id + ":" + (this.page_key || "[no key]") +
+                " for " + this.user_id + " because " + this.reason;
         },
     };
 
     this.checkBasicSecurity(session, allowed);
 
+    if ((page_key && !this.requires_key) || (!page_key && this.requires_key)) {
+        allowed.reason = (page_key ? "page_key NOT required" : "page_key required");
+        allowed.access = false;
+    }
     if (this.wf_type && page_key && session.allowedPageTask(this.id, page_key, allowed)) {
         allowed.access = true;
     } else if (this.workflow_only) {            // Workflow-only page
@@ -269,6 +267,14 @@ module.exports.define("checkRecordSecurity", function (session, page_key, cached
 * @param params: object map of strings
 */
 module.exports.define("update", function (params) {
+    if (this.internal_state !== 29 && this.internal_state !== 39) {
+        this.throwError({
+            type: "E",
+            id: "invalid_update_entry_state",
+            internal_state: this.internal_state,
+            message: "this page is still processing - please try again later",
+        });
+    }
     this.internal_state = 30;
     this.session.newVisit(this.id, this.getPageTitle(), this.record_parameters ? params : null,
         this.page_key);
@@ -301,16 +307,21 @@ module.exports.define("update", function (params) {
 
 module.exports.define("updateReferParams", function (params) {
     if (params.refer_page_id && params.refer_page_id !== this.id) {
-        this.exit_url = "?page_id=" + params.refer_page_id + (params.refer_page_key ? "&page_key=" + params.refer_page_key : "");
-        this.refer_page = this.session.getPageFromCache(params.refer_page_id);
-        this.debug("Set exit_url from refer_page_id: " + this.exit_url);
-        if (this.refer_page && params.refer_section_id) {
-            if (!this.session.refer_sections) {
-                this.session.refer_sections = {};
+        try {
+            this.exit_url = UI.pages.getThrowIfUnrecognized(params.refer_page_id)
+                .getSimpleURL(params.refer_page_key);
+            this.refer_page = this.session.getPageFromCache(params.refer_page_id);
+            this.debug("Set exit_url from refer_page_id: " + this.exit_url);
+            if (this.refer_page && params.refer_section_id) {
+                if (!this.session.refer_sections) {
+                    this.session.refer_sections = {};
+                }
+                this.session.refer_sections[this.id] =
+                    this.refer_page.sections.get(params.refer_section_id);
+                this.debug("Refer section: " + this.session.refer_sections[this.id]);
             }
-            this.session.refer_sections[this.id] =
-                this.refer_page.sections.get(params.refer_section_id);
-            this.debug("Refer section: " + this.session.refer_sections[this.id]);
+        } catch (e) {
+            this.report(e);
         }
     }
 });
@@ -1015,11 +1026,11 @@ module.exports.define("getPrimaryRow", function () {
 
 /**
 * Returns the minimal query string referencing this page, including its page_key if it has one
-* @return Relative URL, i.e. '{skin}?page_id={page id}[&page_key={page key}]'
+* @return Relative URL, i.e. '{skin}#page_id={page id}[&page_key={page key}]'
 */
 module.exports.define("getSimpleURL", function (override_key) {
     var page_key = override_key || this.page_key;
-    return this.skin + "?page_id=" + this.id + (page_key ? "&page_key=" + page_key : "");
+    return this.skin + "#page_id=" + this.id + (page_key ? "&page_key=" + page_key : "");
 });
 
 
@@ -1088,8 +1099,13 @@ module.exports.define("setRedirectUrl", function (obj, params) {
 
 
 module.exports.define("keepAfterNavAway", function () {
-    if (typeof this.keep_after_nav_away === "boolean") {
-        return this.keep_after_nav_away;
+    return this.keep_after_nav_away;
+});
+
+
+module.exports.define("isMainNavigation", function () {
+    if (typeof this.main_navigation === "boolean") {
+        return this.main_navigation;
     }
-    return this.transactional;
+    return !this.transactional;
 });

@@ -123,7 +123,8 @@ module.exports.define("getColumn", function () {
         column = this.table_alias + "." + this.base_field.id;
     }
     if (this.filt_field.sql_function) {
-        column = " ( " + SQL.Connection.detokenizeAlias(this.filt_field.sql_function, this.table_alias) + " )";
+        column = " ( " + SQL.Connection.detokenizeAlias(
+            this.filt_field.sql_function, this.filt_field.table_alias) + " )";
     }
     return column;
 });

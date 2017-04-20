@@ -536,15 +536,11 @@ module.exports.define("renderBulk", function (foot_elem, render_opts) {
     //     .attribute("value", JSON.stringify(this.selected_keys || []));
 
     Object.keys(this.bulk_actions).forEach(function (key) {
-        if (that.bulk_actions[key].visible && UI.pages.get(that.bulk_actions[key].target_page)) {
+        var target_page = UI.pages.get(that.bulk_actions[key].target_page);
+        if (that.bulk_actions[key].visible && target_page) {
             cell_elem.makeAnchor(that.bulk_actions[key].button_label,
-                "modal?page_id=" + that.bulk_actions[key].target_page + "&page_key=" + that.owner.page.page_key,
+                target_page.getSimpleURL(that.owner.page.page_key),
                 "btn btn-default btn-xs css_bulk disabled");
-
-            // cell_elem.addChild("a", null, "btn btn-xs css_bulk css_open_in_modal disabled")
-            //     .attribute("href", "?page_id=" + value.target_page + "&page_key=" +
-            // that.owner.page.page_key + that.getReferURLParams())
-            //     .addText(value.button_label, true);
         }
     });
     return cell_elem;
