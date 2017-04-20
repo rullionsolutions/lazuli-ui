@@ -307,16 +307,21 @@ module.exports.define("update", function (params) {
 
 module.exports.define("updateReferParams", function (params) {
     if (params.refer_page_id && params.refer_page_id !== this.id) {
-        this.exit_url = UI.pages.get(params.refer_page_id).getSimpleURL(params.refer_page_key);
-        this.refer_page = this.session.getPageFromCache(params.refer_page_id);
-        this.debug("Set exit_url from refer_page_id: " + this.exit_url);
-        if (this.refer_page && params.refer_section_id) {
-            if (!this.session.refer_sections) {
-                this.session.refer_sections = {};
+        try {
+            this.exit_url = UI.pages.getThrowIfUnrecognized(params.refer_page_id)
+                .getSimpleURL(params.refer_page_key);
+            this.refer_page = this.session.getPageFromCache(params.refer_page_id);
+            this.debug("Set exit_url from refer_page_id: " + this.exit_url);
+            if (this.refer_page && params.refer_section_id) {
+                if (!this.session.refer_sections) {
+                    this.session.refer_sections = {};
+                }
+                this.session.refer_sections[this.id] =
+                    this.refer_page.sections.get(params.refer_section_id);
+                this.debug("Refer section: " + this.session.refer_sections[this.id]);
             }
-            this.session.refer_sections[this.id] =
-                this.refer_page.sections.get(params.refer_section_id);
-            this.debug("Refer section: " + this.session.refer_sections[this.id]);
+        } catch (e) {
+            this.report(e);
         }
     }
 });
