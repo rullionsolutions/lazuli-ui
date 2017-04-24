@@ -6,9 +6,9 @@ var Data = require("lazuli-data/index.js");
 
 module.exports = UI.Section.clone({
     id: "ItemSet",
-    items: null,                // array of item objects
-    main_query: null,           // query object for dynamic use INSTEAD of items
-    load_query: null,           // query object to use to populate items
+    items: null,            // array of item objects
+    query_mode: null,       // "preload" to load items in setup, "dynamic" to reload in eachItem()
+    query: null,            // query object for dynamic use INSTEAD of items OR to populate items
     allow_add_items: true,
     allow_delete_items: true,
     add_item_icon: "<i class='glyphicon glyphicon-plus'></i>",         // ordinary plus ; "&#x2795;" heavy plus sign
@@ -38,7 +38,7 @@ module.exports.register("renderAfterItems");
 
 
 module.exports.defbind("initializeItemSet", "cloneInstance", function () {
-    this.items = [];
+    this.items = [];            // deleted items remain in array but eachItem() ignores them
     this.item_count = 0;
     this.itemset = 1;
     this.itemset_last = 1;
@@ -48,8 +48,8 @@ module.exports.defbind("initializeItemSet", "cloneInstance", function () {
 /**
 * To setup this grid, by setting 'entity' to the entity specified by 'entity', then calling
 */
-module.exports.define("setupEntity", function (entity_id) {
-    this.entity = Data.entities.getThrowIfUnrecognized(entity_id).clone({
+module.exports.define("setupRecord", function (entity_id) {
+    this.record = Data.entities.getThrowIfUnrecognized(entity_id).clone({
         id: entity_id,
         skip_registration: true,
     });
@@ -58,9 +58,9 @@ module.exports.define("setupEntity", function (entity_id) {
 
 module.exports.defbind("initializeEntity", "setup", function () {
     if (typeof this.entity_id === "string") {
-        this.setupEntity(this.entity_id);
+        this.setupRecord(this.entity_id);
     } else if (typeof this.entity === "string") {        // 'entity' as a string property is deprecated
-        this.setupEntity(this.entity);
+        this.setupRecord(this.entity);
     }
 });
 
@@ -71,12 +71,12 @@ module.exports.define("setupParentRecord", function (parent_record) {
 
 
 module.exports.defbind("initializeParentRecord", "setup", function () {
-    if (!this.parent_record && this.entity && this.link_field) {
-        if (this.owner.page.page_key_entity && this.entity.getField(this.link_field).ref_entity
+    if (!this.parent_record && this.record && this.link_field) {
+        if (this.owner.page.page_key_entity && this.record.getField(this.link_field).ref_entity
                 === this.owner.page.page_key_entity.id) {
             this.setupParentRecord(this.owner.page.page_key_entity
                 .getRow(this.owner.page.page_key));
-        } else if (this.entity.getField(this.link_field).ref_entity === this.owner.page.entity.id) {
+        } else if (this.record.getField(this.link_field).ref_entity === this.owner.page.entity.id) {
             this.setupParentRecord(this.owner.page.getPrimaryRow());
         }
     }
@@ -89,7 +89,7 @@ module.exports.defbind("initializeParentRecord", "setup", function () {
 * @return the field in entity specified by 'add_item_field'
 */
 module.exports.define("setupItemAdder", function (add_item_field_id, add_item_unique) {
-    var orig_add_item_field = this.entity.getField(add_item_field_id);
+    var orig_add_item_field = this.record.getField(add_item_field_id);
     var spec = {
         id: "add_item_field_" + this.id,
         type: orig_add_item_field.type,
@@ -116,9 +116,11 @@ module.exports.define("setupItemAdder", function (add_item_field_id, add_item_un
 
     this.add_item_unique = (typeof add_item_unique === "boolean") ?
         add_item_unique :
-        this.entity.isKey(add_item_field_id);
+        this.record.isKey(add_item_field_id);
 
     this.debug("setupItemAdder(): " + this.add_item_field.lov);
+    // prevent original field from being shown as a column - assumes entity is a private copy...
+    orig_add_item_field.list_column = false;
     // this.columns.get(this.add_item_field_id).editable = false;
     return orig_add_item_field;
 });
@@ -149,9 +151,9 @@ module.exports.define("getAdderItem", function (val) {
 
 
 module.exports.defbind("initializeItemAdder", "setup", function () {
-    if (this.add_item_field_id && this.entity) {
+    if (this.add_item_field_id && this.record) {
         this.setupItemAdder(this.add_item_field_id, this.add_item_unique);
-    } else if (this.add_item_field && this.entity) {            // deprecated and replaced...
+    } else if (this.add_item_field && this.record) {            // deprecated and replaced...
         this.add_item_field_id = this.add_item_field;
         this.setupItemAdder(this.add_item_field, this.add_item_unique);
     }
@@ -161,7 +163,7 @@ module.exports.defbind("initializeItemAdder", "setup", function () {
 
 
 module.exports.define("setupItemDeleterField", function () {
-    this.entity.addField({
+    this.record.addField({
         id: "_delete",
         type: "ContextButton",
         // label: " ",
@@ -171,7 +173,7 @@ module.exports.define("setupItemDeleterField", function () {
         btn_css_class: "css_col_control",
         css_cmd: true,
     });
-    this.entity.moveTo("_delete", 0);
+    this.record.moveTo("_delete", 0);
 });
 
 
@@ -184,12 +186,12 @@ module.exports.defbind("initializeItemDeleter", "setup", function () {
 * To create a new x.sql.Query object, stored to 'query' to be used to load initial items
 * into the grid;
 */
-module.exports.define("setupLoadQuery", function (entity) {
-    this.load_query = entity.getQuery(true);      // getQuery(true) - default sort
+module.exports.define("setupQuery", function (entity) {
+    this.query = entity.getQuery(true);      // getQuery(true) - default sort
     if (this.load_link_field && this.load_link_value) {
-        this.setLinkCondition(this.load_query, this.load_link_field, this.load_link_value);
+        this.setLinkCondition(this.query, this.load_link_field, this.load_link_value);
     } else if (this.link_field && this.parent_record) {
-        this.setLinkCondition(this.load_query, this.link_field, this.parent_record.getKey());
+        this.setLinkCondition(this.query, this.link_field, this.parent_record.getKey());
     }
 });
 
@@ -200,7 +202,7 @@ module.exports.define("setupLoadQuery", function (entity) {
 * is false if not supplied
 */
 module.exports.define("setLinkField", function (link_field, value) {
-    this.setLinkCondition(this.main_query, link_field, value);
+    this.setLinkCondition(this.query, link_field, value);
 });
 
 
@@ -217,8 +219,9 @@ module.exports.define("setLinkCondition", function (query, link_field, value) {
     } else {
         this.key_condition = query.addCondition({ full_condition: "false", });        // prevent load if no value supplied
     }
-    this.entity.getField(link_field).list_column = false;
-    this.entity.getField(link_field).visible = false;
+    // prevent link field from being shown as a column - assumes entity is a private copy...
+    this.record.getField(link_field).list_column = false;
+    this.record.getField(link_field).visible = false;
     // if (this.columns.get(link_field)) {
     //     this.columns.get(link_field).visible = false;
     // }
@@ -230,33 +233,39 @@ module.exports.define("setLinkCondition", function (query, link_field, value) {
 * on each item's key
 */
 module.exports.define("load", function () {
-    while (this.load_query.next()) {
-        this.addItem({ key: this.load_query.getColumn("A._key").get(), });
+    while (this.query.next()) {
+        this.addItemInternal({ key: this.query.getColumn("A._key").get(), });
     }
-    this.load_query.reset();
+    this.query.reset();
 });
 
 
 module.exports.defbind("initializeLoad", "setup", function () {
-    if (this.auto_fill !== false && !this.load_query) {
-        if (this.load_entity_id) {
-            this.setupLoadQuery(Data.entities.get(this.load_entity_id));
-        } else {
-            this.setupLoadQuery(this.entity);
+    if (this.query_mode === "preload" || this.query_mode === "manual" || this.query_mode === "dynamic") {
+        if (!this.query) {
+            if (this.load_entity_id) {
+                this.setupQuery(Data.entities.get(this.load_entity_id));
+            } else {
+                this.setupQuery(this.record);
+            }
         }
     }
-    if (this.load_query) {
+    if (this.query_mode === "preload") {
         this.load();
     }
 });
 
 
 module.exports.define("addItem", function (spec) {
-    var item;
-    if (!this.allow_add_items || this.main_query) {
+    if (!this.allow_add_items || this.query_mode === "dynamic") {
         this.throwError("items cannot be added to this ItemSet");
     }
-    item = this.makeItemFromSpec(spec);
+    return this.addItemInternal(spec);
+});
+
+
+module.exports.define("addItemInternal", function (spec) {
+    var item = this.makeItemFromSpec(spec);
     this.items.push(item);
     this.item_count += 1;
     this.happen("addItem", item);
@@ -269,7 +278,7 @@ module.exports.define("deleteItem", function (item) {
     if (i < 0) {
         this.throwError("item not in this ItemSet: " + item.id);
     }
-    if (!this.allow_delete_items || this.main_query) {
+    if (!this.allow_delete_items || this.query_mode === "dynamic") {
         this.throwError("items cannot be deleted from this ItemSet");
     }
     if (item.allow_delete === false) {
@@ -288,11 +297,19 @@ module.exports.define("getItemCount", function () {
 
 
 module.exports.define("eachItem", function (funct) {
-    this.items.forEach(function (item) {
-        if (!item.deleting) {
-            funct(item);
+    if (this.query_mode === "dynamic") {
+        while (this.query.next()) {
+            this.record.populate(this.query.resultset);
+            funct(this.record);
         }
-    });
+        this.query.reset();
+    } else {
+        this.items.forEach(function (item) {
+            if (!item.deleting) {
+                funct(item);
+            }
+        });
+    }
 });
 
 
@@ -321,7 +338,7 @@ module.exports.define("makeItemFromSpec", function (spec) {
 
 
 module.exports.define("createNewOrExistingRecordWithKey", function (key) {
-    return this.owner.page.getTrans().getRow(this.entity, key);
+    return this.owner.page.getTrans().getRow(this.record, key);
 });
 
 
@@ -332,12 +349,12 @@ module.exports.define("createNewRecordWithField", function (field_id, field_val)
         this.throwError("createNewRecordWithField() row already exists: " + field_val);
     }
     this.getParentRecord();         // ensure this.parent_record populated if can be
-    if (this.entity.getField(field_id).isKey() && this.parent_record
+    if (this.record.getField(field_id).isKey() && this.parent_record
             && this.parent_record.isKeyComplete()) {
         row = this.getDeletedRecordIfExists(field_id, field_val);
     }
     if (!row) {
-        row = this.owner.page.getTrans().createNewRow(this.entity);
+        row = this.owner.page.getTrans().createNewRow(this.record);
         row.getField(field_id).set(field_val);
     }
     return row;
@@ -345,7 +362,7 @@ module.exports.define("createNewRecordWithField", function (field_id, field_val)
 
 
 module.exports.define("createNewRecord", function () {
-    return this.owner.page.getTrans().createNewRow(this.entity);
+    return this.owner.page.getTrans().createNewRow(this.record);
 });
 
 
@@ -355,7 +372,7 @@ module.exports.define("getDeletedRecordIfExists", function (field_id, field_val)
     key_values[this.link_field] = this.getParentRecord().getKey();
     key_values[field_id] = field_val;
     this.debug("getDeletedRowIfExists() " + this.view.call(key_values));
-    row = this.entity.getCachedRecordFromKeyValues(key_values, this.owner.page.getTrans());
+    row = this.record.getCachedRecordFromKeyValues(key_values, this.owner.page.getTrans());
     this.debug("getDeletedRowIfExists() got: " + row);
     if (row) {
         if (!row.deleting) {
@@ -377,7 +394,9 @@ module.exports.defbind("afterAddItem", "addItem", function (item) {
         }
     }
     item.id_prefix = this.id + "_" + this.items.length;
-    item.linkToParent(this.parent_record, this.link_field);
+    if (this.parent_record) {
+        item.linkToParent(this.parent_record, this.link_field);
+    }
     if (item.page !== this.owner.page) {
         item.addToPage(this.owner.page);
     }
@@ -396,20 +415,23 @@ module.exports.defbind("afterDeleteItem", "deleteItem", function (item) {
 });
 
 
-module.exports.defbind("updateAddDeleteItems", "update", function (param) {
+module.exports.defbind("updateAddDeleteItems", "update", function (params) {
     var match;
     var that = this;
-    if (param.page_button === "list_add_" + this.id) {
+    if (params.page_button === "list_add_" + this.id) {
         this.addItem({
             add_blank_item: true,
         });
-    } else if (param.page_button === "add_item_field_" + this.id) {
+    } else if (params.page_button === "list_set_extend_" + this.id) {
+        this.itemset = 1;
+        this.itemset_size += this.itemset_size_ext;
+    } else if (params.page_button === "add_item_field_" + this.id) {
         this.addItem({
             field_id: this.add_item_field_id,
-            field_val: param["add_item_field_" + this.id],
+            field_val: params["add_item_field_" + this.id],
         });
-    } else if (typeof param.page_button === "string") {
-        match = param.page_button.match(new RegExp(this.id + "_([0-9]+)__delete"));
+    } else if (typeof params.page_button === "string") {
+        match = params.page_button.match(new RegExp(this.id + "_([0-9]+)__delete"));
         if (match && match.length > 1) {
             this.eachItem(function (item) {
                 if (item.getField("_delete").getControl() === match[0]) {
@@ -428,6 +450,10 @@ module.exports.defbind("renderItemSet", "render", function (render_opts) {
     this.foot_elmt = null;
     this.item_count = 0;
     this.eachItem(function (item) {
+        if (render_opts.test === true) {
+            that.setTestValues(item);
+        }
+        that.trace("renderItemSet(): " + item);
         that.renderItem(that.item_elmt, render_opts, item);
         that.item_count += 1;
     });
@@ -449,14 +475,25 @@ module.exports.define("getFootElement", function (render_opts) {
 
 
 module.exports.define("renderItem", function (parent_elmt, render_opts, item) {
-    item.renderTile(parent_elmt, render_opts);
+    this.throwError("this function must be overridden");
+});
+
+
+module.exports.define("setTestValues", function (item) {
+    var obj = {};           // this capture of values for test will be REMOVED!!
+    item.each(function (f) {
+        obj[f.id] = f.get();
+    });
+    if (!this.test_values) {
+        this.test_values = [];
+    }
+    this.test_values.push(obj);
 });
 
 
 /**
 * To render elements displayed in the event that the list thas no items. By default this will
 * be the text_no_items but can be overridden to display addition elements.
-* @param
 */
 module.exports.define("renderNoItems", function () {
     this.getSectionElement().text(this.text_no_items);
@@ -555,3 +592,31 @@ module.exports.define("getItemCountText", function () {
     return text;
 });
 
+
+module.exports.define("outputNavLinks", function (page_key, details_elmt) {
+    var found_key = false;
+    var prev_key;
+    var next_key;
+    this.trace("outputNavLinks() with page_key: " + page_key);
+    this.items.forEach(function (item) {
+        if (item.deleting || typeof item.getKey !== "function") {
+            return;
+        }
+        if (!found_key) {
+            prev_key = item.getKey();
+        }
+        if (found_key && !next_key) {
+            next_key = item.getKey();
+        }
+        if (item.getKey() === page_key) {
+            found_key = true;
+        }
+    });
+    this.debug("outputNavLinks(): " + page_key + ", " + found_key + ", " + prev_key + ", " + next_key);
+    if (found_key && prev_key) {
+        details_elmt.attr("data-prev-key", prev_key);
+    }
+    if (found_key && next_key) {
+        details_elmt.attr("data-next-key", next_key);
+    }
+});

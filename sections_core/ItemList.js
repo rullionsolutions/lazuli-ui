@@ -1,6 +1,6 @@
 "use strict";
 
-var Core = require("lapis-core");
+var Core = require("lapis-core/index.js");
 var UI = require("lazuli-ui/index.js");
 
 /**
@@ -17,6 +17,9 @@ module.exports = UI.ItemSet.clone({
 //    text_total_row: "Total"
     sort_arrow_asc_icon: "&#x25B2;",
     sort_arrow_desc_icon: "&#x25BC;",
+    column_chooser_icon: "<i class='glyphicon glyphicon-wrench'></i>",
+    prev_columnset_icon: "<i class='glyphicon glyphicon-chevron-left'></i>",
+    next_columnset_icon: "<i class='glyphicon glyphicon-chevron-right'></i>",
 });
 
 
@@ -25,29 +28,204 @@ module.exports = UI.ItemSet.clone({
 */
 module.exports.defbind("cloneColumns", "cloneInstance", function () {
     this.columns = this.parent.columns.clone({
-        id: "List.columns",
+        id: "ItemList.columns",
         section: this,
     });
 });
 
 
 /**
-* Set 'list_advanced_mode' property from session property, and 'record_select_col' if
-* 'record_select' is given
+* Set 'list_advanced_mode' property from session property
 */
-// module.exports.defbind("setAdvancedMode", "setup", function () {
-    // this.list_advanced_mode = (this.owner.page.session.list_advanced_mode === true);
-// });
+module.exports.defbind("setAdvancedMode", "setup", function () {
+    this.list_advanced_mode = (this.owner.page.session.list_advanced_mode === true);
+    this.record.getField("_delete").btn_label = this.delete_item_icon;
+});
+
+
+module.exports.defbind("setupColumns", "setup", function () {
+    var that = this;
+    this.record.each(function (field) {
+        if (field.accessible !== false) {
+            that.addColumn(field);
+        }
+    });
+});
+
+
+/**
+* To add the ith field of record as a column, setting the column's field property to the field,
+* and query_column to the query column
+* @param index number of the field
+* @return new column object
+*/
+module.exports.define("addColumn", function (field) {
+    var query_column = this.query.getColumn(field.query_column);
+    var col;
+    if (!query_column) {
+        this.warn("No query_column: " + field);
+    }
+    col = this.columns.add({
+        field: field,
+        query_column: query_column,
+    });
+    this.trace("Adding field as column: " + field.id + " to section " + this.id + ", query_column: " + query_column);
+    return col;
+});
+
+
+/**
+* To add a function field to the record, and a corresponding column to this list
+* @param spec object, specifying at least: id, type, label and sql_function
+* @return new column object
+*/
+module.exports.define("addFunction", function (spec) {
+    var field;
+    var query_column;
+    var col;
+
+    spec.name = spec.id;
+    if (typeof spec.list_column !== "boolean") {
+        spec.list_column = true;            // visible unless overridden by visible property
+    }
+    field = this.record.addField(spec);
+    query_column = field.addColumnToTable(this.query.main, spec);
+    field.query_column = query_column.id;
+    col = this.columns.add({
+        field: field,
+        query_column: query_column,
+    });
+
+    if (this.row_control_col) {
+        this.columns.moveTo("_row_control", (this.columns.length() - 1));
+    }
+
+    this.debug("Adding function as column: " + field.id + " to section " + this.id + ", query_column: " + query_column);
+    return col;
+});
+
+
+// ------------------------------------------------------------ Row Selection and Bulk Actions
+module.exports.define("addBulkAction", function (id, button_label, target_page) {
+    if (!this.bulk_actions) {
+        this.bulk_actions = {};
+    }
+    if (this.bulk_actions[id]) {
+        this.throwError("bulk action id already used: " + id);
+    }
+    this.bulk_actions[id] = {
+        id: id,
+        button_label: button_label,
+        target_page: target_page,
+        visible: true,
+    };
+    if (typeof this.multirow_selection !== "boolean") {
+        this.multirow_selection = true;
+    }
+    if (this.multirow_selection && !this.selection_col) {
+        this.addSelectionColumn();
+    }
+});
+
+
+module.exports.define("addSelectionColumn", function () {
+    this.selection_col = this.columns.add({
+        id: "_row_selection",
+        dynamic_only: true,
+        sortable: false,
+        sticky: true,
+        label: "",
+    });
+    this.columns.moveTo("_row_selection", 0);
+
+    /* Override Start */
+    this.selection_col.override("renderHeader", function (row_elmt, render_opts) {
+        var elmt = row_elmt.makeElement("th", "css_mr_sel");
+        elmt.makeElement("span", "glyphicon glyphicon-ok");
+    });
+    this.selection_col.override("renderCell", function (row_elem, render_opts, i, row_obj) {
+        var td = row_elem.makeElement("td", "css_mr_sel");
+        td.makeElement("span", "glyphicon glyphicon-ok");
+    });
+    /* Override End */
+    this.selection_col.visible = true;
+});
+
+
+/**
+* Update section's state using the parameter map supplied
+* @param params: object map of strings
+*/
+module.exports.defbind("updateColSelection", "update", function (params) {
+    var i;
+    var col;
+    this.show_choose_cols = false;
+    if (this.list_advanced_mode && this.allow_choose_cols && params.page_button) {
+        for (i = 0; i < this.columns.length(); i += 1) {
+            col = this.columns.get(i);
+            if (col.visible && params.page_button === "list_" + this.id + "_col_" + col.id + "_hide") {
+                col.visible = false;
+                this.show_choose_cols = true;
+            } else if (!col.visible && params.page_button === "list_" + this.id + "_col_" + col.id + "_show") {
+                col.visible = true;
+                this.show_choose_cols = true;
+            }
+        }
+        this.cols_filter = (params["cols_filter_" + this.id] && params.page_button
+            && params.page_button.indexOf("list_" + this.id + "_col_") !== -1) ? params["cols_filter_" + this.id] : "";
+    }
+    if (this.max_visible_columns) {
+        if (params.page_button === "column_page_frst_" + this.id) {
+            this.current_column_page = 0;
+        } else if (params.page_button === "column_page_prev_" + this.id && this.current_column_page > 0) {
+            this.current_column_page -= 1;
+        } else if (params.page_button === "column_page_next_" + this.id && this.current_column_page < (this.total_column_pages - 1)) {
+            this.current_column_page += 1;
+        } else if (params.page_button === "column_page_last_" + this.id && this.current_column_page < (this.total_column_pages - 1)) {
+            this.current_column_page = this.total_column_pages - 1;
+        }
+    }
+});
 
 
 /**
 * To reset record_count property and call resetAggregations(), initializeColumnPaging(), etc
 */
-module.exports.defbind("renderBeforeRecords", "renderBeforeItems", function () {
+module.exports.defbind("renderBeforeRecords", "renderBeforeItems", function (render_opts) {
     this.resetAggregations();
+    this.initializeColumnPaging(render_opts);
     this.table_elem = null;
     if (!this.hide_table_if_empty) {
-        this.getTableElement();
+        this.getTableElement(render_opts);
+    }
+});
+
+
+/**
+* To set-up column paging if specified
+* @param render_opts
+*/
+module.exports.define("initializeColumnPaging", function (render_opts) {
+    var sticky_cols = 0;
+    var non_sticky_cols = 0;
+    if (!this.max_visible_columns) {
+        return;
+    }
+    this.columns.each(function (col) {
+        if (col.isVisibleDisregardingColumnPaging(render_opts)) {
+            if (col.sticky) {
+                sticky_cols += 1;
+            } else {
+                col.non_sticky_col_seq = non_sticky_cols;
+                non_sticky_cols += 1;
+            }
+        }
+    });
+    this.non_sticky_cols_per_page = this.max_visible_columns - sticky_cols;
+    this.total_column_pages = Math.max(1, Math.ceil(non_sticky_cols
+        / this.non_sticky_cols_per_page));
+    if (typeof this.current_column_page !== "number") {
+        this.current_column_page = 0;
     }
 });
 
@@ -58,7 +236,7 @@ module.exports.defbind("renderBeforeRecords", "renderBeforeItems", function () {
 * @param
 * @return table_elem XmlStream object for the HTML table
 */
-module.exports.define("getTableElement", function () {
+module.exports.define("getTableElement", function (render_opts) {
     var css_class;
 
     if (!this.table_elem) {
@@ -74,7 +252,7 @@ module.exports.define("getTableElement", function () {
         this.table_elem = this.getSectionElement().makeElement("table", css_class, this.id);
 
         if (this.show_header) {
-            this.renderHeader(this.table_elem);
+            this.renderHeader(this.table_elem, render_opts);
         }
     }
     return this.table_elem;
@@ -88,76 +266,6 @@ module.exports.define("getTableElement", function () {
 */
 module.exports.define("getActualColumns", function () {
     return (this.total_visible_columns || 0) + (this.level_break_depth || 0);
-});
-
-
-/**
-* To generate the HTML thead element and its content, calling renderHeader() on each visible column
-* @param xmlstream table element object,
-* @return row_elem xmlstream object representing the th row
-*/
-module.exports.define("renderHeader", function (table_elem) {
-    var thead_elem;
-    var row_elem;
-    var total_visible_columns = 0;
-
-    thead_elem = table_elem.makeElement("thead");
-    if (this.show_col_groups) {
-        this.renderColumnGroupHeadings(thead_elem);
-    }
-
-    row_elem = this.renderHeaderRow(thead_elem);
-    this.columns.each(function (col) {
-        if (col.isVisibleColumn()) {
-            col.renderHeader(row_elem);
-            total_visible_columns += 1;
-        }
-    });
-    this.total_visible_columns = total_visible_columns;
-    return row_elem;
-});
-
-
-module.exports.define("renderHeaderRow", function (thead_elem) {
-    var row_elem = thead_elem.makeElement("tr");
-    var i;
-
-    for (i = 0; i < this.level_break_depth; i += 1) {
-        row_elem.makeElement("th", "css_level_break_header");
-    }
-    return row_elem;
-});
-
-
-module.exports.define("renderColumnGroupHeadings", function (thead_elem) {
-    var row_elem = this.renderHeaderRow(thead_elem);
-    var group_label = "";
-    var colspan = 0;
-
-    function outputColGroup() {
-        var th_elem;
-        if (colspan > 0) {
-            th_elem = row_elem.makeElement("th", "css_col_group_header");
-            th_elem.attr("colspan", String(colspan));
-            th_elem.text(group_label);
-        }
-    }
-    this.columns.each(function (col) {
-        if (col.isVisibleColumn()) {
-            if (typeof col.group_label === "string" && col.group_label !== group_label) {
-                outputColGroup();
-                group_label = col.group_label;
-                colspan = 0;
-            }
-            colspan += 1;
-        }
-    });
-    outputColGroup();
-});
-
-
-module.exports.override("getItemSetElement", function () {
-    return this.getTableElement().makeElement("tbody");
 });
 
 
@@ -191,109 +299,192 @@ module.exports.define("setColumnVisibility", function (params) {
 });
 
 
-module.exports.defbind("renderAfterRecords", "render", function () {
-    if (this.element) {
-        if (!this.table_elem && this.getRecordCount() === 0) {
-//            this.sctn_elem.text(this.text_no_records);
-            this.renderNoRecords();
-        } else if (this.table_elem && (this.show_footer || this.bulk_actions)) {
-            this.renderFooter(this.table_elem);
+/**
+* To generate the HTML thead element and its content, calling renderHeader() on each visible column
+* @param xmlstream table element object,
+* @return row_elem xmlstream object representing the th row
+*/
+module.exports.define("renderHeader", function (table_elem, render_opts) {
+    var thead_elem = table_elem.makeElement("thead");
+    var row_elem;
+    var total_visible_columns = 0;
+
+    if (this.show_col_groups) {
+        this.renderColumnGroupHeadings(thead_elem, render_opts);
+    }
+
+    row_elem = this.renderHeaderRow(thead_elem, render_opts);
+    this.columns.each(function (col) {
+        if (col.isVisibleColumn(render_opts)) {
+            col.renderHeader(row_elem, render_opts);
+            total_visible_columns += 1;
+        }
+    });
+    this.total_visible_columns = total_visible_columns;
+    return row_elem;
+});
+
+
+module.exports.define("renderHeaderRow", function (thead_elem, render_opts) {
+    var row_elem = thead_elem.makeElement("tr");
+    var i;
+
+    for (i = 0; i < this.level_break_depth; i += 1) {
+        row_elem.makeElement("th", "css_level_break_header");
+    }
+    return row_elem;
+});
+
+
+module.exports.define("renderColumnGroupHeadings", function (thead_elem, render_opts) {
+    var row_elem = this.renderHeaderRow(thead_elem);
+    var group_label = "";
+    var colspan = 0;
+
+    function outputColGroup() {
+        var th_elem;
+        if (colspan > 0) {
+            th_elem = row_elem.makeElement("th", "css_col_group_header");
+            th_elem.attr("colspan", String(colspan));
+            th_elem.text(group_label);
         }
     }
+    this.columns.each(function (col) {
+        if (col.isVisibleColumn()) {
+            if (typeof col.group_label === "string" && col.group_label !== group_label) {
+                outputColGroup();
+                group_label = col.group_label;
+                colspan = 0;
+            }
+            colspan += 1;
+        }
+    });
+    outputColGroup();
+});
+
+
+module.exports.override("getItemSetElement", function (render_opts) {
+    return this.getTableElement(render_opts).makeElement("tbody");
+});
+
+
+module.exports.override("renderItem", function (tbody_elmt, render_opts, item) {
+    // var table_elem = this.getTableElement(render_opts);
+    return this.renderListRow(tbody_elmt, render_opts, item);        // element is table
+});
+
+
+/**
+* To render an object (usually a fieldset) as an HTML tr element, calling getRowCSSClass(), rowURL()
+* @param table_elem (xmlstream), render_opts, row_obj
+* @return row_elem (xmlstream)
+*/
+module.exports.define("renderListRow", function (tbody_elmt, render_opts, item) {
+    var i;
+    var css_class = this.getRowCSSClass(item);
+    var row_elem = tbody_elmt.makeElement("tr", css_class);
+    this.trace("renderListRow(): " + css_class);
+    this.rowURL(row_elem, item);
+    for (i = 0; i < this.level_break_depth; i += 1) {
+        row_elem.makeElement("td");
+    }
+    this.columns.each(function (col) {
+        col.trace("Setting field to: " + item.getField(col.id));
+        col.field = item.getField(col.id);
+        if (col.isVisibleColumn(render_opts)) {
+            col.renderCell(row_elem, render_opts);
+        }
+    });
+    this.columns.each(function (col) {
+        col.renderAdditionalRow(tbody_elmt, render_opts, i, item, css_class);
+    });
+    return row_elem;
+});
+
+
+/**
+* To return the CSS class string for the tr object - 'css_row_even' or 'css_row_odd' for row
+* striping
+* @param row_obj
+* @return CSS class string
+*/
+module.exports.define("getRowCSSClass", function (row_obj) {
+    return (this.item_count % 2 === 0) ? "css_row_even" : "css_row_odd";
 });
 
 
 /**
 * To return a string URL for the row, if appropriate
-* @param row_elem (xmlstream), record (usually a fieldset)
+* @param row_elem (xmlstream), row_obj (usually a fieldset)
 * @return string URL or null or undefined
 */
-module.exports.define("addRecordKey", function () {
-    if (this.fieldset && typeof this.fieldset.getKey === "function") {
-        this.element.attr("data-key", this.fieldset.getKey());
+module.exports.define("rowURL", function (row_elem, row_obj) {
+    if (row_obj && typeof row_obj.getKey === "function") {
+        row_elem.attribute("data-key", row_obj.getKey());
     }
 });
 
 
-/**
-* To render the table footer, as a containing div, calling renderRowAdder(), render the
-* column-chooser icon,
-* @param sctn_elem (xmlstream),
-* @return foot_elem (xmlstream) if dynamic
-*/
-module.exports.define("renderFooter", function (table_elem) {
-    var foot_elem;
-    var cell_elem;
+module.exports.override("getFootElement", function (render_opts) {
+    var tfoot_elem;
+    if (!this.foot_elmt) {
+        tfoot_elem = this.getTableElement(render_opts).makeElement("tfoot");
+        if (this.bulk_actions && Object.keys(this.bulk_actions).length > 0) {
+            this.renderBulk(tfoot_elem);
+        }
+        this.foot_elmt = tfoot_elem.makeElement("tr").makeElement("td");
+        this.foot_elmt.attr("colspan", String(this.getActualColumns()));
+    }
+    return this.foot_elmt;
+});
 
-//    foot_elem = sctn_elem.makeElement("div", "css_list_footer");
-    if (this.bulk_actions && Object.keys(this.bulk_actions).length > 0) {
-        foot_elem = table_elem.makeElement("tfoot");
-        this.renderBulk(foot_elem);
-    }
-    if (this.show_footer) {
-        if (!foot_elem) {
-            foot_elem = table_elem.makeElement("tfoot");
+
+module.exports.define("renderBulk", function (tfoot_elem, render_opts) {
+    var that = this;
+    var cell_elem = tfoot_elem.makeElement("tr", "css_mr_actions").makeElement("td");
+    cell_elem.attr("colspan", String(this.getActualColumns()));
+    cell_elem.makeHidden("list_" + this.id + "_mr_selected", JSON.stringify(this.selected_keys || []));
+    // cell_elem.makeElement("input")
+    //     .attribute("name" , "list_" + this.id + "_mr_selected")
+    //     .attribute("type" , "hidden")
+    //     .attribute("value", JSON.stringify(this.selected_keys || []));
+
+    Object.keys(this.bulk_actions).forEach(function (key) {
+        var target_page = UI.pages.get(that.bulk_actions[key].target_page);
+        if (that.bulk_actions[key].visible && target_page) {
+            cell_elem.makeAnchor(that.bulk_actions[key].button_label,
+                target_page.getSimpleURL(that.owner.page.page_key),
+                "btn btn-default btn-xs css_bulk disabled");
         }
-        cell_elem = foot_elem.makeElement("tr").makeElement("td");
-        cell_elem.attr("colspan", String(this.getActualColumns()));
-        if (this.isDynamic()) {
-            this.renderRecordAdder(cell_elem);
-            this.renderListPager(cell_elem);
-            // this.renderColumnPager(cell_elem);
-            if (this.list_advanced_mode && this.allow_choose_cols) {
-                this.renderColumnChooser(cell_elem);
-            }
-        } else {
-            this.renderRecordCount(cell_elem);
-        }
-    }
-    return foot_elem;
+    });
+    return cell_elem;
 });
 
 
 /**
-* To render the control for adding records (either a 'plus' type button or a drop-down of keys)
-* if appropriate
+* To render a column-chooser control (a set of push-state buttons represents all available
+*columns, with the
 * @param foot_elem (xmlstream), render_opts
 */
-module.exports.define("renderRecordAdder", function (foot_elem) {
-    return undefined;
-});
+module.exports.defbind("renderColumnChooser", "renderAfterItems", function (render_opts) {
+    var foot_elmt = this.getFootElement();
+    var ctrl_elmt;
+    var that = this;
 
-/**
-* To render a simple span showing the number of records, and the sub-set shown, if appropriate
-* @param foot_elem (xmlstream), render_opts
-*/
-module.exports.define("renderRecordCount", function (foot_elem) {
-    return foot_elem.makeElement("span", "css_list_recordcount").text(this.getRecordCountText());
-});
+    if (this.allow_choose_cols && this.list_advanced_mode) {
+        ctrl_elmt = foot_elmt.makeElement("span", "css_list_col_chooser");
+        ctrl_elmt.attr("onclick", "x.ui.listColumnChooser(this)");
+        ctrl_elmt.makeElement("a", "btn btn-default btn-xs", "list_choose_cols_" + this.id)
+            .attr("title", "Choose Columns to View")
+            .text(this.column_chooser_icon, true);
+        ctrl_elmt = foot_elmt.makeElement("div", "css_list_choose_cols" + (this.show_choose_cols ? "" : " css_hide"));
+        ctrl_elmt.makeElement("span", "css_list_cols_filter")
+            .makeInput("text", "cols_filter_" + this.id, this.cols_filter,
+            "css_list_cols_filter form-control input-sm", "Filter Columns");
 
-
-module.exports.define("outputNavLinks", function (page_key, details_elmt) {
-    var index;
-    this.trace("outputNavLinks() with page_key: " + page_key + " keys: " + this.keys + ", " + this.keys.length);
-    if (this.keys && this.keys.length > 0) {
-        this.debug("outputNavLinks() with page_key: " + page_key + " gives index: " + index);
-        if (this.prev_recordset_last_key === page_key && this.recordset > 1) {
-            this.moveToRecordset(this.recordset - 1);            // prev recordset
-        } else if (this.next_recordset_frst_key === page_key && this.subsequent_recordset) {
-            this.moveToRecordset(this.recordset + 1);            // next recordset
-        }
-        index = this.keys.indexOf(page_key);
-        if (index > 0) {
-            details_elmt.attr("data-prev-key", this.keys[index - 1]);
-            // obj.nav_prev_key = this.keys[index - 1];
-        } else if (index === 0 && this.prev_recordset_last_key) {
-            details_elmt.attr("data-prev-key", this.prev_recordset_last_key);
-            // obj.nav_prev_key = this.prev_recordset_last_key;
-        }
-        if (index < this.keys.length - 1) {
-            details_elmt.attr("data-next-key", this.keys[index + 1]);
-            // obj.nav_next_key = this.keys[index + 1];
-        } else if (index === this.keys.length - 1 && this.next_recordset_frst_key) {
-            details_elmt.attr("data-next-key", this.next_recordset_frst_key);
-            // obj.nav_next_key = this.next_recordset_frst_key;
-        }
+        this.columns.each(function (col) {
+            col.renderColumnChooser(ctrl_elmt, render_opts, that.id);
+        });
     }
 });
 
@@ -346,7 +537,7 @@ module.exports.define("updateAggregations", function () {
 * Show a total row at bottom of table if any visible column is set to aggregate
 * @param xmlstream element object for the table, render_opts
 */
-module.exports.define("renderAggregations", function () {
+module.exports.define("renderAggregations", function (render_opts) {
     var first_aggr_col = -1;
     var pre_aggr_colspan = 0;
     var row_elem;
@@ -366,7 +557,7 @@ module.exports.define("renderAggregations", function () {
     if (first_aggr_col === -1) {        // no aggregation
         return;
     }
-    row_elem = this.getTableElement().makeElement("tr", "css_record_total");
+    row_elem = this.getTableElement(render_opts).makeElement("tr", "css_record_total");
     if (pre_aggr_colspan > 0) {
         row_elem.makeElement("td").attr("colspan", pre_aggr_colspan.toFixed(0)).text(this.text_total_record);
     }

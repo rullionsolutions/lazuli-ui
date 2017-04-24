@@ -4,8 +4,9 @@ var UI = require("lazuli-ui/index.js");
 
 
 module.exports = UI.ItemSet.clone({
-    id: "ListForm",
+    id: "ItemSetForm",
     main_tag: "div",
+    query_mode: "preload",
     layout: "form-horizontal",
     hide_blank_uneditable_fields: true,
 });
