@@ -35,7 +35,7 @@ module.exports.override("render", function (element, render_opts) {
     }
     UI.Section.render.call(this, element, render_opts);
     sctn_elem = this.getSectionElement(render_opts);
-    this.renderChart(sctn_elem.addChild("div", "css_chart_" + this.id, "css_chart"), render_opts);
+    this.renderChart(sctn_elem.makeElement("div", "css_chart", "css_chart_" + this.id), render_opts);
     sctn_elem.makeElement("span", "css_hide").text(JSON.stringify(this.chart_json));
 });
 

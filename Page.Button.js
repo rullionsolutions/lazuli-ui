@@ -22,20 +22,14 @@ module.exports.define("render", function (parent_elmt, render_opts) {
     if (this.main_button) {
         css_class += " btn_primary css_button_main";
     }
-//    button_elmt = parent_elmt.makeElement("button", css_class, this.id);
-//    button_elmt.data("bind_object", this);
-    // if (this.target) {
-    //     button_elmt.attr("target", this.target);
-    // }
-    // button_elmt.text(this.label);
-    button_elmt = parent_elmt.addChild("button", this.id, css_class);
+    button_elmt = parent_elmt.makeElement("button", this.id, css_class);
     if (this.target) {
-        button_elmt.attribute("target", this.target);
+        button_elmt.attr("target", this.target);
     }
     if (this.confirm_text) {
-        button_elmt.attribute("data-confirm-text", this.confirm_text);
+        button_elmt.attr("data-confirm-text", this.confirm_text);
     }
-    button_elmt.addText(this.label);
+    button_elmt.text(this.label);
     return button_elmt;
 });
 

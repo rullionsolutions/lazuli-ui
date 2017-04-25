@@ -80,15 +80,15 @@ module.exports.define("renderHeader", function (row_elmt, render_opts) {
         this.field.renderListHeader(row_elmt, render_opts, css_class);
         return;
     }
-    elmt = row_elmt.addChild("th", null, css_class);
+    elmt = row_elmt.makeElement("th", css_class);
     if (this.width) {
-        elmt.attribute("style", "width: " + this.width);
+        elmt.attr("style", "width: " + this.width);
     }
     if (this.min_width) {
-        elmt.attribute("style", "min-width: " + this.min_width);
+        elmt.attr("style", "min-width: " + this.min_width);
     }
     if (this.max_width) {
-        elmt.attribute("style", "max-width: " + this.max_width);
+        elmt.attr("style", "max-width: " + this.max_width);
     }
     if (this.description && render_opts.dynamic_page !== false) {
         elmt.makeTooltip(this.hover_text_icon, this.description);
@@ -99,7 +99,7 @@ module.exports.define("renderHeader", function (row_elmt, render_opts) {
             && render_opts.dynamic_page !== false && this.query_column) {
         elmt = this.renderSortLink(elmt);
     }
-    elmt.addText(this.label);
+    elmt.text(this.label);
 });
 
 

@@ -43,35 +43,35 @@ module.exports.define("render", function (element, render_opts) {
 
 
 module.exports.define("renderItem", function (ul_elem, render_opts) {
-    var li_elem = ul_elem.addChild("li");
+    var li_elem = ul_elem.makeElement("li");
     if (this.children && this.children.length > 0) {
-        li_elem.addChild("a", null, "css_hier_ctrl css_uni_icon_lrg");
+        li_elem.makeElement("a", "css_hier_ctrl css_uni_icon_lrg");
     }
     if (this.label) {
-        li_elem.addText(this.label);
+        li_elem.text(this.label);
     }
     return li_elem;
 });
 
 
 module.exports.define("renderItemTableLayout", function (table_elem, render_opts) {
-    var tr_elem = table_elem.addChild("tr");
+    var tr_elem = table_elem.makeElement("tr");
     var td_elem;
     var i;
 
     if (this.children && this.children.length > 0) {
-        tr_elem.attribute("class", "css_expanded");
+        tr_elem.attr("class", "css_expanded");
     }
     for (i = 0; i < this.level; i += 1) {
-        tr_elem.addChild("td");
+        tr_elem.makeElement("td");
     }
     if (this.label) {
-        td_elem = tr_elem.addChild("td");
-        td_elem.attribute("colspan", (20 - this.level).toFixed(0));
+        td_elem = tr_elem.makeElement("td");
+        td_elem.attr("colspan", (20 - this.level).toFixed(0));
         if (this.children && this.children.length > 0) {
-            td_elem.addChild("a", null, "css_hier_ctrl css_uni_icon_lrg");
+            td_elem.makeElement("a", "css_hier_ctrl css_uni_icon_lrg");
         }
-        td_elem.addText(this.label);
+        td_elem.text(this.label);
     }
     return tr_elem;
 });
@@ -83,7 +83,7 @@ module.exports.define("renderChildren", function (li_elem, render_opts) {
 
     for (i = 0; this.children && i < this.children.length; i += 1) {
         if (i === 0) {
-            ul_elem = li_elem.addChild("ul");
+            ul_elem = li_elem.makeElement("ul");
         }
         this.children[i].render(ul_elem, render_opts);
     }

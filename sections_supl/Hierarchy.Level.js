@@ -42,7 +42,7 @@ module.exports.define("render", function (element, render_opts, parent_key, leve
     while (query.next()) {
         this.record.populate(query.resultset);
         if (!ul_elem) {
-            ul_elem = element.addChild("ul");
+            ul_elem = element.makeElement("ul");
         }
         li_elem = this.renderItem(ul_elem, render_opts, level);
         if (this.homogen_link_field && level <= render_opts.max_depth) {
@@ -75,9 +75,9 @@ module.exports.define("getQuery", function (parent_key) {
 
 
 module.exports.define("renderItem", function (ul_elem, render_opts, level) {
-    var li_elem = ul_elem.addChild("li");
-    li_elem.attribute("class", (level <= this.owner.max_init_visible_depth ? "css_expanded" : "css_contracted"));
-    li_elem.addChild("a", null, "css_hier_ctrl css_uni_icon_lrg");
+    var li_elem = ul_elem.makeElement("li");
+    li_elem.attr("class", (level <= this.owner.max_init_visible_depth ? "css_expanded" : "css_contracted"));
+    li_elem.makeElement("a", "css_hier_ctrl css_uni_icon_lrg");
     this.record.renderLineItem(li_elem, render_opts);
     return li_elem;
 });

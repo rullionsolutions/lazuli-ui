@@ -29,16 +29,16 @@ module.exports.override("render", function (element, render_opts) {
     UI.Section.render.call(this, element, render_opts);
     sctn_elem = this.getSectionElement(render_opts);
     if (this.table_layout) {
-        div_elem = sctn_elem.addChild("table", null, "css_tree_table_layout form-inline");
+        div_elem = sctn_elem.makeElement("table", "css_tree_table_layout form-inline");
         if (this.show_root_node) {
             this.root_node.render(div_elem, render_opts);
         } else {
             this.root_node.renderChildren(div_elem, render_opts);
         }
     } else {
-        div_elem = sctn_elem.addChild("div", null, "form-inline col-md-8");
+        div_elem = sctn_elem.makeElement("div", "form-inline col-md-8");
         if (this.show_root_node) {
-            ul_elem = div_elem.addChild("ul");
+            ul_elem = div_elem.makeElement("ul");
             this.root_node.render(ul_elem, render_opts);
         } else {
             this.root_node.renderChildren(div_elem, render_opts);

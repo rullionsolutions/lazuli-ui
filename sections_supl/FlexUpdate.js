@@ -299,7 +299,8 @@ module.exports.define("getFormElement", function (render_opts) {
     var css_class;
     if (!this.form_elem) {
         css_class = "css_form_body form-horizontal";
-        this.form_elem = this.getSectionElement(render_opts).addChild("div", null, css_class);
+        this.form_elem = this.getSectionElement(render_opts)
+            .makeElement("div", css_class);
     }
     return this.form_elem;
 });

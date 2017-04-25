@@ -93,7 +93,7 @@ module.exports.define("render", function (element, render_opts) {
 module.exports.define("getSectionElement", function (render_opts) {
     var temp_title;
     if (!this.sctn_elem) {
-        this.sctn_elem = this.parent_elem.addChild("div", this.id, this.getCSSClass());
+        this.sctn_elem = this.parent_elem.makeElement("div", this.getCSSClass(), this.id);
         temp_title = this.title || this.generated_title;
         if (temp_title) {
             this.sctn_elem.makeElement("h2", "css_section_title")

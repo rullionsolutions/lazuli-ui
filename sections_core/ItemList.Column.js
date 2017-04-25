@@ -150,35 +150,6 @@ module.exports.define("renderSortLink", function (elem) {
 
 
 /**
-* To render the sort controls of a sortable column as two arrows, one up and one down, which when
-* clicked
-* @param th element (xmlstream) to put content into
-module.exports.define("renderSortIcons", function (elem) {
-    var sort_seq_asc  = 0,
-        sort_seq_desc = 0;
-
-    if (typeof this.query_column.sort_seq === "number" && this.query_column.sort_seq < 3) {
-        if (this.query_column.sort_desc) {
-            sort_seq_desc = this.query_column.sort_seq + 1;
-        } else {
-            sort_seq_asc  = this.query_column.sort_seq + 1;
-        }
-    }
-    elem.addChild("a")
-        .attribute("title", "Sort Ascending")
-        .addChild("img", "list_sort_asc_"  + this.owner.section.id + "_" + this.id, "css_cmd")
-        .attribute("alt", "Sort Ascending")
-        .attribute("src", "../cdn/icons/ico_sort_" + sort_seq_asc  + "_asc.png");
-    elem.addChild("a")
-        .attribute("title", "Sort Descending")
-        .addChild("img", "list_sort_desc_" + this.owner.section.id + "_" + this.id, "css_cmd")
-        .attribute("alt", "Sort Descending")
-        .attribute("src", "../cdn/icons/ico_sort_" + sort_seq_desc + "_desc.png");
-});
-*/
-
-
-/**
 * Generate HTML output for this column's cell in a table body row
 * @param parent xmlstream element object for the row, render_opts, column index number, generic
 * object representing the row (e.g. a x.sql.Query or x.Entity object)
@@ -211,18 +182,13 @@ module.exports.define("renderAdditionalRow", function (table_elem, render_opts, 
 
     if (this.visible && this.separate_row && ((this.field
             && (this.field.getText() || this.field.isEditable())) || (!this.field && this.text))) {
-        row_elem = table_elem.addChild("tr", null, css_class);
+        row_elem = table_elem.makeElement("tr", css_class);
         this.owner.section.rowURL(row_elem, item);
         if (this.owner.section.allow_delete_rows) {
             row_elem.makeElement("td", "css_col_control");
         }
         row_elem.makeElement("td", "css_align_right")
             .makeTooltip(this.hover_text_icon, this.label, "css_uni_icon");
-            // .addChild("a", null, "css_uni_icon")
-            // .attribute("rel"  , "tooltip")
-            // .attribute("title", this.label)
-            // .addText(this.hover_text_icon, true);
-//        row_elem.addChild("td", null, "css_list_additional_row_label", this.label + ":");
         css_type = (this.css_type || (this.field && this.field.css_type));
         cell_elem = row_elem.makeElement("td");
         if (css_type) {

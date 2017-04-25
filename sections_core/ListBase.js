@@ -174,6 +174,11 @@ module.exports.defbind("updateListExtend", "update", function (params) {
     }
 });
 
+
+module.exports.define("resetToStart", function () {
+    this.recordset = 1;
+});
+
 /*
 module.exports.defbind("updateRowSelection", "update", function (params) {
     if (this.selection_col && typeof params["list_" + this.id + "_mr_selected"] === "string") {

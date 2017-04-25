@@ -296,6 +296,11 @@ module.exports.define("getItemCount", function () {
 });
 
 
+module.exports.define("resetToStart", function () {
+    this.itemset = 1;
+});
+
+
 module.exports.define("eachItem", function (funct) {
     if (this.query_mode === "dynamic") {
         while (this.query.next()) {
@@ -423,8 +428,7 @@ module.exports.defbind("updateAddDeleteItems", "update", function (params) {
             add_blank_item: true,
         });
     } else if (params.page_button === "list_set_extend_" + this.id) {
-        this.itemset = 1;
-        this.itemset_size += this.itemset_size_ext;
+        this.extendItemSet();
     } else if (params.page_button === "add_item_field_" + this.id) {
         this.addItem({
             field_id: this.add_item_field_id,
@@ -501,7 +505,7 @@ module.exports.define("renderNoItems", function () {
 
 
 module.exports.define("extendItemSet", function () {
-    this.itemset = 1;
+    this.resetToStart();
     this.itemset_size += this.itemset_size_ext;
 });
 

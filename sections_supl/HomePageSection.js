@@ -18,25 +18,26 @@ module.exports.override("getSectionElement", function (render_opts) {
     var anchor;
 
     if (!this.sctn_elem) {
-        this.sctn_elem = this.parent_elem.addChild("div", this.id, this.getCSSClass());
+        this.sctn_elem = this.parent_elem.makeElement("div", this.getCSSClass(), this.id);
         temp_title = this.title || this.generated_title;
         if (temp_title) {
-            anchor = this.sctn_elem.addChild("h2", null, "css_section_title");
+            anchor = this.sctn_elem.makeElement("h2", "css_section_title");
             if (this.section_heading_page_id && !this.section_heading_url) {
                 this.section_heading_url = UI.pages.get(this.section_heading_page_id)
                     .getSimpleURL();
             }
             if (this.section_heading_url) {
-                anchor = anchor.addChild("a");
-                anchor.attribute("href", this.section_heading_url);
+                anchor = anchor.makeElement("a");
+                anchor.attr("href", this.section_heading_url);
             }
             if (this.glyphicon) {
-                anchor.addChild("i", null, "glyphicon glyphicon-" + this.glyphicon);
+                anchor.makeElement("i", "glyphicon glyphicon-" + this.glyphicon);
             }
-            anchor.addText(temp_title);
+            anchor.text(temp_title);
         }
         if (this.text) {
-            this.sctn_elem.addChild("div", null, "css_section_text").addText(this.text, true);    // Valid XML content
+            this.sctn_elem.makeElement("div", "css_section_text")
+                .text(this.text, true);    // Valid XML content
         }
     }
     return this.sctn_elem;
@@ -50,11 +51,11 @@ module.exports.override("getSectionElement", function (render_opts) {
 
 module.exports.define("renderLinkOrText", function (element, url, text, css_class, no_link_text) {
     if (this.owner.page.session.allowedURL(url)) {
-        element = element.addChild("a", null, css_class);
-        element.attribute("href", url);
-        element.addText(text, true);
+        element = element.makeElement("a", css_class);
+        element.attr("href", url);
+        element.text(text, true);
     } else if (no_link_text) {
-        element.addText(no_link_text, true);
+        element.text(no_link_text, true);
     }
 });
 
@@ -214,13 +215,13 @@ module.exports.define("addWorkflowTaskRecord", function (query, sctn_title, toda
     var due_date = query.getColumn("A.due_date").get();
     if (this.tasks_title !== sctn_title) {
         this.getSectionElement();                // sets this.sctn_elem
-        this.sctn_elem.addChild("br");
-        this.sctn_elem.addChild("h5", null, null, sctn_title);
+        this.sctn_elem.makeElement("br");
+        this.sctn_elem.makeElement("h5").text(sctn_title);
         this.tasks_title = sctn_title;
         this.tasks_ul_elem = null;
     }
     if (!this.tasks_ul_elem) {
-        this.tasks_ul_elem = this.sctn_elem.addChild("ul", null, "nav nav-pills css_task_group");
+        this.tasks_ul_elem = this.sctn_elem.makeElement("ul", "nav nav-pills css_task_group");
     }
     task_obj.overdue = (due_date && due_date < today);
     return task_obj;
@@ -243,37 +244,36 @@ module.exports.define("addTasksFromArray", function (outer_ul_elem, curr_title, 
             count_overdue += 1;
         }
     }
-    outer_li_elem = outer_ul_elem.addChild("li", null, "dropdown task-dropdown");
-    outer_a_elem = outer_li_elem.addChild("a", null, "dropdown-toggle");
-    outer_a_elem.attribute("data-toggle", "dropdown");
-    outer_a_elem.attribute("href", "#");
+    outer_li_elem = outer_ul_elem.makeElement("li", "dropdown task-dropdown");
+    outer_a_elem = outer_li_elem.makeElement("a", "dropdown-toggle");
+    outer_a_elem.attr("data-toggle", "dropdown");
+    outer_a_elem.attr("href", "#");
     count_underdue = task_array.length - count_overdue;
-    badge_elem = outer_a_elem.addChild("div", null, "css_task_badge");
+    badge_elem = outer_a_elem.makeElement("div", "css_task_badge");
     if (count_underdue > 0) {
-        badge_elem.addChild("div", null, "badge badge-info", count_underdue.toFixed(0));
+        badge_elem.makeElement("div", "badge badge-info", count_underdue.toFixed(0));
     }
     if (count_overdue > 0) {
-        badge_elem.addChild("div", null, "badge badge-important", count_overdue.toFixed(0));
+        badge_elem.makeElement("div", "badge badge-important", count_overdue.toFixed(0));
     }
-    outer_a_elem.addChild("span", null, "task-menu", curr_title);
-    outer_a_elem.addChild("b", null, "caret task-caret");
-//    outer_li_elem.addChild("b", null, null, curr_title);
-    inner_ul_elem = outer_li_elem.addChild("ul", null, "dropdown-menu");
+    outer_a_elem.makeElement("span", "task-menu").text(curr_title);
+    outer_a_elem.makeElement("b", "caret task-caret");
+    inner_ul_elem = outer_li_elem.makeElement("ul", "dropdown-menu");
     for (i = 0; i < task_array.length && i < this.max_tasks_to_show_per_dropdown; i += 1) {
-        inner_li_elem = inner_ul_elem.addChild("li");
-        inner_a_elem = inner_li_elem.addChild("a", task_array[i].id);
-        inner_a_elem.attribute("href", task_array[i].url);
+        inner_li_elem = inner_ul_elem.makeElement("li");
+        inner_a_elem = inner_li_elem.makeElement("a", task_array[i].id);
+        inner_a_elem.attr("href", task_array[i].url);
         if (task_array[i].overdue) {
-            inner_a_elem.addChild("span", null, "label label-important", "Overdue");
-            inner_a_elem.addText(" ");
+            inner_a_elem.makeElement("span", "label label-important").text("Overdue");
+            inner_a_elem.text(" ");
         }
-        inner_a_elem.addText(task_array[i].title);
+        inner_a_elem.text(task_array[i].title);
     }
     if (task_array.length >= this.max_tasks_to_show_per_dropdown) {
-        inner_li_elem = inner_ul_elem.addChild("li");
-        inner_a_elem = inner_li_elem.addChild("a");
-        inner_a_elem.attribute("href", UI.pages.get("wf_tasks").getSimpleURL());
-        inner_a_elem.addText("More...");
+        inner_li_elem = inner_ul_elem.makeElement("li");
+        inner_a_elem = inner_li_elem.makeElement("a");
+        inner_a_elem.attr("href", UI.pages.get("wf_tasks").getSimpleURL());
+        inner_a_elem.text("More...");
     }
 });
 
