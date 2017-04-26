@@ -1013,9 +1013,9 @@ module.exports.define("getPrimaryRow", function () {
         } else if (this.entity && this.page_key) {
             this.primary_row = this.entity.getRow(this.page_key);        // non-transaction
         }
-        if (this.primary_row && this.primary_row.messages) {
-            this.primary_row.messages.prefix = "";              // avoid prefix text in messages
-        }
+        // if (this.primary_row && this.primary_row.messages) {
+        //     this.primary_row.messages.prefix = "";              // avoid prefix text in messages
+        // }
     }
     if (!this.full_title && this.primary_row && this.primary_row.action !== "C") {
         this.full_title = this.title + ": " + this.primary_row.getLabel("page_title_addl");

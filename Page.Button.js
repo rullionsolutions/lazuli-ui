@@ -22,7 +22,7 @@ module.exports.define("render", function (parent_elmt, render_opts) {
     if (this.main_button) {
         css_class += " btn_primary css_button_main";
     }
-    button_elmt = parent_elmt.makeElement("button", this.id, css_class);
+    button_elmt = parent_elmt.makeElement("button", css_class, this.id);
     if (this.target) {
         button_elmt.attr("target", this.target);
     }
