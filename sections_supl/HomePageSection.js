@@ -13,40 +13,22 @@ module.exports = UI.Section.clone({
 });
 
 
-module.exports.override("getSectionElement", function (render_opts) {
-    var temp_title;
-    var anchor;
-
-    if (!this.sctn_elem) {
-        this.sctn_elem = this.parent_elem.makeElement("div", this.getCSSClass(), this.id);
-        temp_title = this.title || this.generated_title;
-        if (temp_title) {
-            anchor = this.sctn_elem.makeElement("h2", "css_section_title");
-            if (this.section_heading_page_id && !this.section_heading_url) {
-                this.section_heading_url = UI.pages.get(this.section_heading_page_id)
-                    .getSimpleURL();
-            }
-            if (this.section_heading_url) {
-                anchor = anchor.makeElement("a");
-                anchor.attr("href", this.section_heading_url);
-            }
-            if (this.glyphicon) {
-                anchor.makeElement("i", "glyphicon glyphicon-" + this.glyphicon);
-            }
-            anchor.text(temp_title);
+module.exports.override("makeSectionTitle", function (heading_elmt, render_opts) {
+    var temp_title = this.title || this.generated_title;
+    var new_elmt;
+    if (temp_title) {
+        new_elmt = heading_elmt.makeElement("h4", "panel-title");
+        if (this.section_heading_page_id && !this.section_heading_url) {
+            this.section_heading_url = UI.pages.get(this.section_heading_page_id)
+                .getSimpleURL();
         }
-        if (this.text) {
-            this.sctn_elem.makeElement("div", "css_section_text")
-                .text(this.text, true);    // Valid XML content
+        if (this.section_heading_url) {
+            new_elmt = new_elmt.makeElement("a");
+            new_elmt.attr("href", this.section_heading_url);
         }
+        new_elmt.text(temp_title);
     }
-    return this.sctn_elem;
 });
-
-
-// module.exports.override("getCSSClass", function (render_opts) {
-//     return Parent.getCSSClass.call(this) + " well";
-// });
 
 
 module.exports.define("renderLinkOrText", function (element, url, text, css_class, no_link_text) {

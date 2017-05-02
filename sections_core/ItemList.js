@@ -240,7 +240,7 @@ module.exports.define("getTableElement", function (render_opts) {
     var css_class;
 
     if (!this.table_elem) {
-        css_class = "css_list table table-bordered table-condensed table-hover form-inline";
+        css_class = "css_list table table-condensed table-hover form-inline";
         if (this.selected_keys && this.selected_keys.length > 0) {
             css_class += " css_mr_selecting";
         }
@@ -480,7 +480,7 @@ module.exports.defbind("renderColumnChooser", "renderAfterItems", function (rend
         ctrl_elmt = foot_elmt.makeElement("div", "css_list_choose_cols" + (this.show_choose_cols ? "" : " css_hide"));
         ctrl_elmt.makeElement("span", "css_list_cols_filter")
             .makeInput("text", "cols_filter_" + this.id, this.cols_filter,
-            "css_list_cols_filter form-control input-sm", "Filter Columns");
+            "css_list_cols_filter form-control input-xs", "Filter Columns");
 
         this.columns.each(function (col) {
             col.renderColumnChooser(ctrl_elmt, render_opts, that.id);

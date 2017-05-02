@@ -14,6 +14,10 @@ module.exports = Core.Base.clone({
     width: "100%",
     tb_span: 12,        // replacing width
     right_align_numbers: false,
+    allow_panel_expand: true,
+    allow_panel_reload: false,
+    allow_panel_collapse: true,
+    allow_panel_remove: true,
 });
 
 
@@ -82,6 +86,25 @@ module.exports.define("render", function (element, render_opts) {
 });
 
 
+/*
+<div class="col-md-6">
+    <div class="panel panel-inverse" data-sortable-id="ui-modal-notification-2">
+        <div class="panel-heading">
+            <div class="panel-heading-btn">
+                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-default" data-click="panel-expand"><i class="fa fa-expand"></i></a>
+                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-success" data-click="panel-reload"><i class="fa fa-repeat"></i></a>
+                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-warning" data-click="panel-collapse"><i class="fa fa-minus"></i></a>
+                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-danger" data-click="panel-remove"><i class="fa fa-times"></i></a>
+            </div>
+            <h4 class="panel-title">Modal</h4>
+        </div>
+        <div class="panel-body">
+            <table class="table">
+                <thead>
+
+*/
+
+
 /**
 * To output the opening elements of the section on first call - the outer div, its title and
 * introductory text, and sets this.sctn_elem which is used by subsequent render logic for the
@@ -91,25 +114,72 @@ module.exports.define("render", function (element, render_opts) {
 * content should be added
 */
 module.exports.define("getSectionElement", function (render_opts) {
-    var temp_title;
     if (!this.sctn_elem) {
-        this.sctn_elem = this.parent_elem.makeElement("div", this.getCSSClass(), this.id);
-        temp_title = this.title || this.generated_title;
-        if (temp_title) {
-            this.sctn_elem.makeElement("h2", "css_section_title")
-                .text(temp_title);
-        }
-        if (this.text) {
-            this.sctn_elem.makeElement("div", "css_section_text")
-                .text(this.text, true);    // Valid XML content
-        }
-        if (this.scoped_style) {
-            this.sctn_elem.makeElement("style")
-                .attr("scoped", "scoped")
-                .text(this.scoped_style, true, true);
-        }
+        this.sctn_elem = this.makePanelSectionElement(render_opts);
     }
     return this.sctn_elem;
+});
+
+
+module.exports.define("makePanelSectionElement", function (render_opts) {
+    var outer_div_elmt = this.parent_elem
+        .makeElement("div", this.getCSSClass(), this.id)
+        .makeElement("div", "panel panel-inverse");
+    var heading_elmt = outer_div_elmt.makeElement("div", "panel-heading");
+    var button_grp_elmt = heading_elmt.makeElement("div", "panel-heading-btn");
+    var sctn_elmt;
+
+    if (this.allow_panel_expand) {
+        button_grp_elmt.makeElement("a", "btn btn-xs btn-icon btn-circle btn-default")
+            .attr("data-click", "panel-expand")
+            .makeElement("i", "fa fa-expand");
+    }
+    if (this.allow_panel_reload) {
+        button_grp_elmt.makeElement("a", "btn btn-xs btn-icon btn-circle btn-success")
+            .attr("data-click", "panel-reload")
+            .makeElement("i", "fa fa-repeat");
+    }
+    if (this.allow_panel_collapse) {
+        button_grp_elmt.makeElement("a", "btn btn-xs btn-icon btn-circle btn-warning")
+            .attr("data-click", "panel-collapse")
+            .makeElement("i", "fa fa-minus");
+    }
+    if (this.allow_panel_remove) {
+        button_grp_elmt.makeElement("a", "btn btn-xs btn-icon btn-circle btn-danger")
+            .attr("data-click", "panel-remove")
+            .makeElement("i", "fa fa-times");
+    }
+    this.makeSectionTitle(heading_elmt, render_opts);
+    sctn_elmt = outer_div_elmt.makeElement("div", "panel-body");
+    this.makeSectionText(sctn_elmt, render_opts);
+    this.makeSectionStyle(sctn_elmt, render_opts);
+    return sctn_elmt;
+});
+
+
+module.exports.define("makeSectionTitle", function (heading_elmt, render_opts) {
+    var temp_title = this.title || this.generated_title;
+    if (temp_title) {
+        heading_elmt.makeElement("h4", "panel-title")
+            .text(temp_title);
+    }
+});
+
+
+module.exports.define("makeSectionText", function (sctn_elmt, render_opts) {
+    if (this.text) {
+        sctn_elmt.makeElement("div", "css_section_text")
+            .text(this.text, true);    // Valid XML content
+    }
+});
+
+
+module.exports.define("makeSectionStyle", function (sctn_elmt, render_opts) {
+    if (this.scoped_style) {
+        sctn_elmt.makeElement("style")
+            .attr("scoped", "scoped")
+            .text(this.scoped_style, true, true);
+    }
 });
 
 
