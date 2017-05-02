@@ -9,6 +9,10 @@ module.exports = UI.Section.clone({
     id: "HomePageSection",
     tb_span: 3,
 //    hide_section_if_empty: true,
+    allow_panel_expand: false,
+    allow_panel_reload: false,
+    allow_panel_collapse: false,
+    allow_panel_remove: false,
     max_tasks_to_show_per_dropdown: 10,
 });
 

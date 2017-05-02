@@ -44,10 +44,10 @@ module.exports.define("getURL", function (override_key) {
         url = page_to.getSimpleURL(this.getKey(override_key));
     }
     if (this.url) {
-        // if (url) {
-        //     url += (url.indexOf("?") > -1) ? "&" : "?";
-        // }
-        url += "&" + this.url;
+        if (url) {
+            url += "&";
+        }
+        url += this.url;
     }
     url = url.replace("{page_key}", (override_key || this.owner.page.page_key));
     return url;

@@ -86,25 +86,6 @@ module.exports.define("render", function (element, render_opts) {
 });
 
 
-/*
-<div class="col-md-6">
-    <div class="panel panel-inverse" data-sortable-id="ui-modal-notification-2">
-        <div class="panel-heading">
-            <div class="panel-heading-btn">
-                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-default" data-click="panel-expand"><i class="fa fa-expand"></i></a>
-                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-success" data-click="panel-reload"><i class="fa fa-repeat"></i></a>
-                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-warning" data-click="panel-collapse"><i class="fa fa-minus"></i></a>
-                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-danger" data-click="panel-remove"><i class="fa fa-times"></i></a>
-            </div>
-            <h4 class="panel-title">Modal</h4>
-        </div>
-        <div class="panel-body">
-            <table class="table">
-                <thead>
-
-*/
-
-
 /**
 * To output the opening elements of the section on first call - the outer div, its title and
 * introductory text, and sets this.sctn_elem which is used by subsequent render logic for the
@@ -124,7 +105,7 @@ module.exports.define("getSectionElement", function (render_opts) {
 module.exports.define("makePanelSectionElement", function (render_opts) {
     var outer_div_elmt = this.parent_elem
         .makeElement("div", this.getCSSClass(), this.id)
-        .makeElement("div", "panel panel-inverse");
+        .makeElement("div", "panel");     /* panel-inverse */
     var heading_elmt = outer_div_elmt.makeElement("div", "panel-heading");
     var button_grp_elmt = heading_elmt.makeElement("div", "panel-heading-btn");
     var sctn_elmt;
