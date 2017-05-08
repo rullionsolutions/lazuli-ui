@@ -696,22 +696,20 @@ module.exports.define("save", function () {
 
 
 module.exports.define("reportSaveMessage", function () {
-    var text = "Saved";
+    var out = {
+        type: "I",
+        text: "Saved",
+    };
     if (this.session.online) {
         // show undo link if online session and no auto steps involved
         if (this.trans.next_auto_steps_to_perform.length === 0 && !this.hide_undo_link_on_save) {
-            text += " " + IO.XmlStream.left_bracket_subst + "a class='css_undo_link' href='" +
-                UI.pages.get("ac_tx_undo").getSimpleURL(this.trans.id) +
-                "&page_button=undo'" + IO.XmlStream.right_bracket_subst + "undo" +
-                IO.XmlStream.left_bracket_subst + "/a" + IO.XmlStream.right_bracket_subst;
+            out.text += " - click to undo";
+            out.link = UI.pages.get("ac_tx_undo").getSimpleURL(this.trans.id) + "&page_button=undo'";
         }
     } else {
-        text += " transaction: " + this.trans.id;
+        out.text += " transaction: " + this.trans.id;
     }
-    this.session.messages.add({
-        type: "I",
-        text: text,
-    });
+    this.session.messages.add(out);
 });
 
 /**
