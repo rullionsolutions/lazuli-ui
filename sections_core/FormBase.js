@@ -47,14 +47,21 @@ module.exports.override("isValid", function () {
 * @param XmlStream object for the parent div to add this section HTML to; render_opts
 * @return XmlStream object for this section's div element
 */
-module.exports.override("render", function (element, render_opts) {
+module.exports.defbind("renderFormBase", "render", function (render_opts) {
+    var that = this;
     var count = 0;
-    UI.Section.render.call(this, element, render_opts);
     this.form_elem = null;
     if (!this.fieldset) {
         this.throwError("formbase no fieldset");
     }
-    count += this.renderForm(this.fieldset, render_opts);
+    this.fieldset.each(function (field) {
+        if (field.isVisible(that.field_group, that.hide_blank_uneditable_fields)) {
+            field.renderFormGroup(that.getFormElement(that.fieldset, render_opts),
+                render_opts, that.layout);
+            count += 1;
+        }
+    });
+
 //    count += this.renderSeparateTextareas(this.fieldset, render_opts);
 // this.sctn_elem will be set if hide_section_if_empty = false
     if (count === 0 && this.sctn_elem) {
@@ -69,9 +76,10 @@ module.exports.override("render", function (element, render_opts) {
 * @param render_opts
 * @return XmlStream object for this section's form div element
 */
-module.exports.define("getFormElement", function (render_opts) {
+module.exports.define("getFormElement", function (fieldset, render_opts) {
     if (!this.form_elem) {
-        this.form_elem = this.getSectionElement(render_opts).makeElement("div", "css_form_body " + this.layout);
+        this.form_elem = this.getSectionElement(render_opts)
+            .makeElement("form", fieldset.getTBFormType(this.layout));
     }
     return this.form_elem;
 });
@@ -86,33 +94,4 @@ module.exports.define("isFieldVisible", function (field, section_opts) {
     var visible = field.isVisible(section_opts.field_group,
         section_opts.hide_blank_uneditable_fields);
     return visible;
-});
-
-
-/**
-* To render the FieldSet as a form with 1 column, calling renderFieldFunction on each field, except
-*   where (this.separate_textareas && field.separate_row_in_form)
-* @param FieldSet object of fields to render, render_opts, section_opts (defaults to the Section
-*   object itself)
-* @return Number of fields rendered
-*/
-module.exports.define("renderForm", function (fieldset, render_opts, section_opts) {
-    var that = this;
-    var form_elem;
-    var count = 0;
-
-    if (!section_opts) {
-        section_opts = this;
-    }
-
-    fieldset.each(function (field) {
-        if (field.isVisible(section_opts.field_group, section_opts.hide_blank_uneditable_fields)) {
-            if (!form_elem) {
-                form_elem = that.getSectionElement(render_opts).makeElement("form", fieldset.getTBFormType(that.layout));
-            }
-            field.renderFormGroup(form_elem, render_opts, that.layout);
-            count += 1;
-        }
-    });
-    return count;
 });
