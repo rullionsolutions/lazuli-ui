@@ -617,7 +617,6 @@ module.exports.define("presave", function () {
 * If page is valid, attempt to commit transaction; if failure occurs during save, page is cancelled
 */
 module.exports.define("save", function () {
-    var i;
     // All errors should be reported "locally", if appropriate for user
     if (!this.trans.isValid()) {
         this.error("Page.save() exiting - trans is initially not valid: " + this.trans.messages.getString());
@@ -638,19 +637,6 @@ module.exports.define("save", function () {
                 text: "not saved due to error",
             });
         }
-        // if (this.performing_wf_nodes) {
-        //     for (i = 0; i < this.performing_wf_nodes.length; i += 1) {
-        //         this.performing_wf_nodes[i].complete(this.outcome_id);
-        //     }
-        // }
-        // failures in performing_wf_nodes[i].complete() are irreversible
-        // if (!this.trans.isValid()) {
-        //     this.debug("Page.save() cancelling - trans is not valid after performing_wf_nodes[...].complete()");
-        //     this.throwError({
-        //         type: "E",
-        //         text: "not saved due to error",
-        //     });
-        // }
         if (!this.allow_no_modifications && !this.trans.isModified()) {
             this.throwError({
                 type: "W",
@@ -698,16 +684,17 @@ module.exports.define("save", function () {
 module.exports.define("reportSaveMessage", function () {
     var out = {
         type: "I",
-        text: "Saved",
+        title: "Saved",
+        text: "saved",
     };
     if (this.session.online) {
         // show undo link if online session and no auto steps involved
         if (this.trans.next_auto_steps_to_perform.length === 0 && !this.hide_undo_link_on_save) {
-            out.text += " - click to undo";
+            out.text = "click to undo";
             out.link = UI.pages.get("ac_tx_undo").getSimpleURL(this.trans.id) + "&page_button=undo'";
         }
     } else {
-        out.text += " transaction: " + this.trans.id;
+        out.text = "transaction: " + this.trans.id;
     }
     this.session.messages.add(out);
 });
