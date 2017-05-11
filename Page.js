@@ -514,12 +514,19 @@ module.exports.define("exchange", function (params, xmlstream, render_opts) {
         //     this.throwError("page status set false incorrectly - call cancel()");
         // }
     // }
-    if (this.active) {
-        this.update(params);
+    try {
+        if (this.active) {
+            this.update(params);
+        }
+        if (this.active && !render_opts.bypass_render) {
+            this.render(xmlstream, render_opts);
+        }
+    } catch (e) {
+        this.report(e);
+        this.session.messages.report(e);
+        // this.cancel();
     }
-    if (this.active && !render_opts.bypass_render) {
-        this.render(xmlstream, render_opts);
-    }
+
     this.session.updateVisit(this.trans, parseInt(params.visit_start_time, 10));
     return this.getExchangeReturn(render_opts);
 });
@@ -736,46 +743,34 @@ module.exports.define("cancel", function (http_status, http_message) {
 */
 module.exports.define("render", function (element, render_opts) {
     var page_elem;
-    this.render_error = false;
-
-// SF - I'm trying this here - I want trans messages to be in the stack for one reload after the
-// trans page is last current
-//    this.session.messages.trans = this.trans;
-    try {
-        if (!this.active) {
-            this.throwError("page not active");
-        }
-        if (typeof this.override_render_all_sections === "boolean") {
-            render_opts.all_sections = this.override_render_all_sections;
-        }
-        page_elem = element.makeElement("div", null, "css_payload_page");
-        // done in Display section update
-        // if (this.getPrimaryRow() && !this.getPrimaryRow().modifiable) {
-        //     this.getPrimaryRow().reload(this.page_key);
-        // }
-        this.happen("renderStart", {
-            page_element: page_elem,
-            render_opts: render_opts,
-        });
-        this.renderSections(page_elem, render_opts, this.page_tab ? this.page_tab.id : null);
-        if (render_opts.include_buttons !== false) {
-            this.renderButtons(page_elem, render_opts);
-        }
-        if (render_opts.show_links !== false) {
-            this.renderLinks(page_elem, render_opts);
-        }
-        this.renderTabs(page_elem, render_opts);
-        this.renderDetails(page_elem, render_opts);
-        this.happen("renderEnd", {
-            page_element: page_elem,
-            render_opts: render_opts,
-        });
-    } catch (e) {
-        this.report(e);
-        // Better to output immediately in render stream, otherwise not reported until next visit
-        this.render_error = true;
-        this.throwError("Error in Page.render: [" + this.id + "] " + this.title);
+    if (!this.active) {
+        this.throwError("page not active");
     }
+    if (typeof this.override_render_all_sections === "boolean") {
+        render_opts.all_sections = this.override_render_all_sections;
+    }
+    page_elem = element.makeElement("div", null, "css_payload_page");
+    // done in Display section update
+    // if (this.getPrimaryRow() && !this.getPrimaryRow().modifiable) {
+    //     this.getPrimaryRow().reload(this.page_key);
+    // }
+    this.happen("renderStart", {
+        page_element: page_elem,
+        render_opts: render_opts,
+    });
+    this.renderSections(page_elem, render_opts, this.page_tab ? this.page_tab.id : null);
+    if (render_opts.include_buttons !== false) {
+        this.renderButtons(page_elem, render_opts);
+    }
+    if (render_opts.show_links !== false) {
+        this.renderLinks(page_elem, render_opts);
+    }
+    this.renderTabs(page_elem, render_opts);
+    this.renderDetails(page_elem, render_opts);
+    this.happen("renderEnd", {
+        page_element: page_elem,
+        render_opts: render_opts,
+    });
     return page_elem;
 });
 
