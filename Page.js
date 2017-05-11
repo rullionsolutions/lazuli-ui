@@ -612,11 +612,18 @@ module.exports.define("instantiateWorkflow", function (record, wf_tmpl_id, wf_in
 */
 module.exports.define("presave", function () {
     var i;
+    var that = this;
     for (i = 0; i < this.sections.length(); i += 1) {
         this.sections.get(i).happen("presave");
     }
     this.happen("presave");
     this.trans.presave(this.outcome_id);
+    this.primary_row.updateWorkflowState(this.outcome_id, true);
+    this.trans.doFullKeyRows(function (row) {
+        if (row.getKey() !== that.primary_row.getKey() && row.id !== that.primary_row.id) {
+            row.updateWorkflowState();
+        }
+    });
 });
 
 
