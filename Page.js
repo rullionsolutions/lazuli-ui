@@ -620,7 +620,8 @@ module.exports.define("presave", function () {
     this.trans.presave(this.outcome_id);
     this.primary_row.updateWorkflowState(this.outcome_id, true);
     this.trans.doFullKeyRows(function (row) {
-        if (row.getKey() !== that.primary_row.getKey() && row.id !== that.primary_row.id) {
+        if (row.getKey() !== that.primary_row.getKey()
+            || String(row) !== String(that.primary_row)) {
             row.updateWorkflowState();
         }
     });
