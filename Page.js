@@ -2,7 +2,7 @@
 
 var Core = require("lapis-core/index.js");
 var Data = require("lazuli-data/index.js");
-var IO = require("lazuli-io/index.js");
+// var IO = require("lazuli-io/index.js");
 var UI = require("lazuli-ui/index.js");
 
 // var pages = {};
@@ -21,6 +21,7 @@ module.exports = Core.Base.clone({
     keep_after_nav_away: false,
     skin: "index.html",
     internal_state: 0,
+    flexbox_section_layout: false,
 //    page_tab: 0
     tabs: Core.OrderedMap.clone({ id: "Page.tabs", }),
     sections: Core.OrderedMap.clone({ id: "Page.sections", }),
@@ -480,7 +481,7 @@ module.exports.define("updateTrans", function (params) {
     }
     this.trans.update();
     this.outcome_id = params.page_button;
-    this.trans.messages.include_field_messages = false;
+    // this.trans.messages.include_field_messages = false;
     first_warnings = this.trans.messages.firstWarnings();
     save = this.outcome_id
             && this.buttons.get(this.outcome_id)
@@ -496,7 +497,7 @@ module.exports.define("updateTrans", function (params) {
                 text: "Save aborted due to first-time-shown warnings",
             });
         } else if (this.challengeTokenOkay(params)) {
-            this.trans.messages.include_field_messages = true;
+            // this.trans.messages.include_field_messages = true;
             this.save();
         }
     }
@@ -618,12 +619,14 @@ module.exports.define("presave", function () {
     }
     this.happen("presave");
     this.trans.presave(this.outcome_id);
-    this.primary_row.updateWorkflowState(this.outcome_id, true);
-    this.trans.doFullKeyRows(function (row) {
-        if (row.getKey() !== that.primary_row.getKey() && row.id !== that.primary_row.id) {
-            row.updateWorkflowState();
-        }
-    });
+    if (Data.WorkflowState) {           // agate-workflow loaded...
+        this.primary_row.updateWorkflowState(this.outcome_id, true);
+        this.trans.doFullKeyRows(function (row) {
+            if (row.getKey() !== that.primary_row.getKey() && row.id !== that.primary_row.id) {
+                row.updateWorkflowState();
+            }
+        });
+    }
 });
 
 
@@ -637,7 +640,7 @@ module.exports.define("save", function () {
 //        this.trans.reportErrors();
         this.session.messages.add({
             type: "E",
-            text: "not saved due to error",
+            text: "not saved due to error(s) - see highlighted fields for details",
         });
         this.moveToFirstErrorTab();
         return;
@@ -648,7 +651,7 @@ module.exports.define("save", function () {
             this.debug("Page.save() cancelling - trans is not valid after presave()");
             this.throwError({
                 type: "E",
-                text: "not saved due to error",
+                text: "not saved due to error(s) - see highlighted fields for details",
             });
         }
         if (!this.allow_no_modifications && !this.trans.isModified()) {
@@ -698,17 +701,16 @@ module.exports.define("save", function () {
 module.exports.define("reportSaveMessage", function () {
     var out = {
         type: "I",
-        title: "Saved",
         text: "saved",
     };
     if (this.session.online) {
         // show undo link if online session and no auto steps involved
         if (this.trans.next_auto_steps_to_perform.length === 0 && !this.hide_undo_link_on_save) {
-            out.text = "click to undo";
+            out.text += " - click to undo";
             out.link = UI.pages.get("ac_tx_undo").getSimpleURL(this.trans.id) + "&page_button=undo'";
         }
     } else {
-        out.text = "transaction: " + this.trans.id;
+        out.text = " - transaction: " + this.trans.id;
     }
     this.session.messages.add(out);
 });
@@ -795,13 +797,17 @@ module.exports.define("renderSections", function (page_elem, render_opts, page_t
     var section;
     var tab;
 
+    if (this.flexbox_section_layout) {
+        sections_elem.attr("class", "flexbox");
+        div_elem = sections_elem;
+    }
     for (i = 0; i < this.sections.length(); i += 1) {
         section = this.sections.get(i);
         tab = section.tab && this.tabs.get(section.tab);
         if (section.visible && section.accessible !== false && (!tab || tab.visible)
                 && (render_opts.all_sections || !tab || section.tab === page_tab_id)) {
             row_span += section.tb_span;
-            if (!div_elem || row_span > 12) {
+            if (!this.flexbox_section_layout && (!div_elem || row_span > 12)) {
                 div_elem = sections_elem.makeElement("div", "row");
                 row_span = section.tb_span;
             }
