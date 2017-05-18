@@ -171,7 +171,12 @@ module.exports.define("makeSectionStyle", function (sctn_elmt, render_opts) {
 * @return String content of the div element's CSS class attribute"
 */
 module.exports.define("getCSSClass", function (render_opts) {
-    var css_class = "css_section css_section_" + (this.css_type_override || this.type) + " col-md-" + this.tb_span;
+    var css_class = "css_section css_section_" + (this.css_type_override || this.type);
+    if (this.owner.page.flexbox_section_layout) {
+        css_class += " fb-item-" + this.tb_span;
+    } else {
+        css_class += " col-md-" + this.tb_span;
+    }
     if (this.right_align_numbers) {
         css_class += " css_right_align_numbers";
     }
