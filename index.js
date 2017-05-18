@@ -33,7 +33,8 @@ exports.sections.add(exports.Update = require("lazuli-ui/sections_core/Update.js
 exports.sections.add(exports.ItemSet = require("lazuli-ui/sections_core/ItemSet.js"));
 exports.sections.add(exports.ItemList = require("lazuli-ui/sections_core/ItemList.js"));
 exports.ItemList.Column = require("lazuli-ui/sections_core/ItemList.Column.js");
-exports.sections.add(exports.ItemList = require("lazuli-ui/sections_core/ItemListUpdate.js"));
+exports.sections.add(exports.ItemListQuery = require("lazuli-ui/sections_core/ItemListQuery.js"));
+exports.sections.add(exports.ItemListUpdate = require("lazuli-ui/sections_core/ItemListUpdate.js"));
 
 exports.sections.add(exports.ListBase = require("lazuli-ui/sections_core/ListBase.js"));
 exports.ListBase.Column = require("lazuli-ui/sections_core/ListBase.Column.js");

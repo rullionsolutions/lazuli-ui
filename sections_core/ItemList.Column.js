@@ -70,13 +70,13 @@ module.exports.define("updateAggregations", function (level_broken) {
 */
 module.exports.define("renderHeader", function (row_elmt, render_opts) {
     var elmt;
-    var css_class = this.css_class;
+    var css_class = this.css_class_col_header || "";
 
     if (this.field) {
         css_class += " " + this.field.getCellCSSClass();
     }
-    if (this.freeze) {
-        css_class += " css_col_freeze";
+    if (this.sticky) {
+        css_class += " css_sticky_col";
     }
     if (this.field && typeof this.field.renderListHeader === "function") {
         this.field.renderListHeader(row_elmt, render_opts, css_class);
@@ -160,7 +160,7 @@ module.exports.define("renderCell", function (row_elem, render_opts) {
     if (this.field) {
         cell_elem = this.field.renderCell(row_elem, render_opts);
     } else {
-        cell_elem = row_elem.makeElement("td", this.css_class);
+        cell_elem = row_elem.makeElement("td", this.css_class_col_cell);
         if (this.text) {
             cell_elem.text(this.text);
         }

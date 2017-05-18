@@ -18,8 +18,8 @@ module.exports = UI.ItemSet.clone({
     sort_arrow_asc_icon: "&#x25B2;",
     sort_arrow_desc_icon: "&#x25BC;",
     column_chooser_icon: "<i class='glyphicon glyphicon-wrench'></i>",
-    prev_columnset_icon: "<i class='glyphicon glyphicon-chevron-left'></i>",
-    next_columnset_icon: "<i class='glyphicon glyphicon-chevron-right'></i>",
+    // prev_columnset_icon: "<i class='glyphicon glyphicon-chevron-left'></i>",
+    // next_columnset_icon: "<i class='glyphicon glyphicon-chevron-right'></i>",
 });
 
 
@@ -39,7 +39,9 @@ module.exports.defbind("cloneColumns", "cloneInstance", function () {
 */
 module.exports.defbind("setAdvancedMode", "setup", function () {
     this.list_advanced_mode = (this.owner.page.session.list_advanced_mode === true);
-    this.record.getField("_delete").btn_label = this.delete_item_icon;
+    if (this.allow_delete_items) {
+        this.record.getField("_delete").btn_label = this.delete_item_icon;
+    }
 });
 
 
@@ -96,8 +98,8 @@ module.exports.define("addFunction", function (spec) {
         query_column: query_column,
     });
 
-    if (this.row_control_col) {
-        this.columns.moveTo("_row_control", (this.columns.length() - 1));
+    if (this.row_control_field) {
+        this.columns.moveTo(this.row_control_field.id, (this.columns.length() - 1));
     }
 
     this.debug("Adding function as column: " + field.id + " to section " + this.id + ", query_column: " + query_column);
@@ -143,7 +145,7 @@ module.exports.define("addSelectionColumn", function () {
         var elmt = row_elmt.makeElement("th", "css_mr_sel");
         elmt.makeElement("span", "glyphicon glyphicon-ok");
     });
-    this.selection_col.override("renderCell", function (row_elem, render_opts, i, row_obj) {
+    this.selection_col.override("renderCell", function (row_elem, render_opts) {
         var td = row_elem.makeElement("td", "css_mr_sel");
         td.makeElement("span", "glyphicon glyphicon-ok");
     });
@@ -174,17 +176,6 @@ module.exports.defbind("updateColSelection", "update", function (params) {
         this.cols_filter = (params["cols_filter_" + this.id] && params.page_button
             && params.page_button.indexOf("list_" + this.id + "_col_") !== -1) ? params["cols_filter_" + this.id] : "";
     }
-    if (this.max_visible_columns) {
-        if (params.page_button === "column_page_frst_" + this.id) {
-            this.current_column_page = 0;
-        } else if (params.page_button === "column_page_prev_" + this.id && this.current_column_page > 0) {
-            this.current_column_page -= 1;
-        } else if (params.page_button === "column_page_next_" + this.id && this.current_column_page < (this.total_column_pages - 1)) {
-            this.current_column_page += 1;
-        } else if (params.page_button === "column_page_last_" + this.id && this.current_column_page < (this.total_column_pages - 1)) {
-            this.current_column_page = this.total_column_pages - 1;
-        }
-    }
 });
 
 
@@ -193,39 +184,9 @@ module.exports.defbind("updateColSelection", "update", function (params) {
 */
 module.exports.defbind("renderBeforeRecords", "renderBeforeItems", function (render_opts) {
     this.resetAggregations();
-    this.initializeColumnPaging(render_opts);
     this.table_elem = null;
     if (!this.hide_table_if_empty) {
         this.getTableElement(render_opts);
-    }
-});
-
-
-/**
-* To set-up column paging if specified
-* @param render_opts
-*/
-module.exports.define("initializeColumnPaging", function (render_opts) {
-    var sticky_cols = 0;
-    var non_sticky_cols = 0;
-    if (!this.max_visible_columns) {
-        return;
-    }
-    this.columns.each(function (col) {
-        if (col.isVisibleDisregardingColumnPaging(render_opts)) {
-            if (col.sticky) {
-                sticky_cols += 1;
-            } else {
-                col.non_sticky_col_seq = non_sticky_cols;
-                non_sticky_cols += 1;
-            }
-        }
-    });
-    this.non_sticky_cols_per_page = this.max_visible_columns - sticky_cols;
-    this.total_column_pages = Math.max(1, Math.ceil(non_sticky_cols
-        / this.non_sticky_cols_per_page));
-    if (typeof this.current_column_page !== "number") {
-        this.current_column_page = 0;
     }
 });
 
@@ -396,7 +357,7 @@ module.exports.define("renderListRow", function (tbody_elmt, render_opts, item) 
         }
     });
     this.columns.each(function (col) {
-        col.renderAdditionalRow(tbody_elmt, render_opts, i, item, css_class);
+        col.renderAdditionalRow(tbody_elmt, render_opts, item, css_class);
     });
     return row_elem;
 });
@@ -419,8 +380,16 @@ module.exports.define("getRowCSSClass", function (row_obj) {
 * @return string URL or null or undefined
 */
 module.exports.define("rowURL", function (row_elem, row_obj) {
+    var display_page;
+    var row_key = row_obj.getKey();
     if (row_obj && typeof row_obj.getKey === "function") {
-        row_elem.attribute("data-key", row_obj.getKey());
+        row_key = row_obj.getKey();
+        row_elem.attr("data-key", row_key);
+        display_page = this.record.getDisplayPage();                    // §vani.core.7.5.1.3
+        if (this.output_row_url && display_page
+                && display_page.allowed(this.owner.page.session, row_key, row_obj).access) {
+            row_elem.attr("url", display_page.getSimpleURL(row_key));
+        }
     }
 });
 
@@ -589,6 +558,9 @@ module.exports.columns.override("add", function (col_spec) {
         col_spec.separate_row = col_spec.separate_row || col_spec.field.separate_row;
         col_spec.decimal_digits = col_spec.decimal_digits || col_spec.field.decimal_digits || 0;
         col_spec.sortable = col_spec.sortable || col_spec.field.sortable;
+        col_spec.sticky = col_spec.sticky || col_spec.field.sticky_column;
+        col_spec.css_class_col_header = col_spec.css_class_col_header || col_spec.field.css_class_col_header;
+        col_spec.css_class_col_cell = col_spec.css_class_col_cell || col_spec.field.css_class_col_cell;
         col_spec.tb_input = col_spec.tb_input || col_spec.field.tb_input_list;
         col_spec.group_label = col_spec.group_label || col_spec.field.col_group_label;
 

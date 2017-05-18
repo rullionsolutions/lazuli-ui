@@ -6,6 +6,7 @@ var Data = require("lazuli-data/index.js");
 
 
 module.exports = UI.ListQuery.clone({
+// module.exports = UI.ItemListQuery.clone({
     id: "Search",
     search_control: "A",       // all search buttons and controls
 //    recordset_size: 25,
@@ -210,7 +211,9 @@ module.exports.override("render", function (element, render_opts) {
 * @return XmlStream object representing the div containing the search buttons
 */
 module.exports.define("renderSearch", function (render_opts, parent_elem) {
+// module.exports.defbind("renderSearch", "renderBeforeItems", function (render_opts) {
     var i;
+    // var table_elem = this.getSectionElement().makeElement("table", "css_search_filters");
     var table_elem = parent_elem.makeElement("table", "css_search_filters");
     var div_elem;
 
@@ -218,6 +221,7 @@ module.exports.define("renderSearch", function (render_opts, parent_elem) {
         this.filters.get(i).render(table_elem, render_opts);
     }
     if (this.search_control !== "N" && render_opts.dynamic_page !== false) {
+        // div_elem = this.getSectionElement().makeElement("div", "css_search_control form-inline");
         div_elem = parent_elem.makeElement("div", "css_search_control form-inline");
         div_elem.makeElement("button", "css_cmd btn btn-primary css_button_main", "page_search").text("Search");
         if (this.search_control !== "S") {

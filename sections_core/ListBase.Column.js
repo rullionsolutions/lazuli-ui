@@ -73,8 +73,8 @@ module.exports.define("renderHeader", function (row_elmt, render_opts) {
     if (this.field) {
         css_class += " " + this.field.getCellCSSClass();
     }
-    if (this.freeze) {
-        css_class += " css_col_freeze";
+    if (this.sticky) {
+        css_class += " css_sticky_col";
     }
     if (this.field && typeof this.field.renderListHeader === "function") {
         this.field.renderListHeader(row_elmt, render_opts, css_class);

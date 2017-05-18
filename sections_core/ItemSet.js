@@ -49,9 +49,12 @@ module.exports.defbind("initializeItemSet", "cloneInstance", function () {
 * To setup this grid, by setting 'entity' to the entity specified by 'entity', then calling
 */
 module.exports.define("setupRecord", function (entity_id) {
-    this.record = Data.entities.getThrowIfUnrecognized(entity_id).clone({
-        id: entity_id,
-        skip_registration: true,
+    // this.record = Data.entities.getThrowIfUnrecognized(entity_id).clone({
+    //     id: entity_id,
+    //     skip_registration: true,
+    // });
+    this.record = Data.entities.getThrowIfUnrecognized(entity_id).getRecord({
+        page: this.owner.page,
     });
 });
 
@@ -178,7 +181,53 @@ module.exports.define("setupItemDeleterField", function () {
 
 
 module.exports.defbind("initializeItemDeleter", "setup", function () {
-    this.setupItemDeleterField();
+    if (this.allow_delete_items) {
+        this.setupItemDeleterField();
+    }
+});
+
+
+/**
+* To add a row control columns as the first column in the table, which is based on a Reference
+* field to the entity, which is set
+* @param entity_id as string
+*/
+module.exports.define("setupItemControlField", function () {
+    var that = this;
+    var visible = !!this.entity.getDisplayPage();
+    this.row_control_field = this.record.addField({
+        id: "_row_control_" + this.id,
+        type: "Reference",
+        label: "",
+        ref_entity: this.entity.id,
+        sql_function: "A._key",
+        visible: visible,
+        list_column: visible,
+        dynamic_only: true,
+        sortable: false,
+        sticky_column: true,
+        css_class_col_header: "css_row_control",
+        dropdown_label: "Action",
+        dropdown_button: true,
+        dropdown_css_class: "btn-default btn-xs",
+        dropdown_right_align: true,
+    });
+    this.row_control_field.override("renderCell", function (row_elem, render_opts) {
+        if (this.dynamic_only && render_opts.dynamic_page === false) {
+            return;
+        }
+        if (this.visible) {
+            // this.field.set(row_obj.getKey());
+            this.renderNavOptions(row_elem.makeElement("td"), render_opts, that.record);
+        }
+    });
+});
+
+
+module.exports.defbind("initializeItemControl", "setup", function () {
+    if (this.show_item_control) {
+        this.setupItemControlField();
+    }
 });
 
 
@@ -304,7 +353,7 @@ module.exports.define("resetToStart", function () {
 module.exports.define("eachItem", function (funct) {
     if (this.query_mode === "dynamic") {
         while (this.query.next()) {
-            this.record.populate(this.query.resultset);
+            this.populateRecordFromQuery();
             funct(this.record);
         }
         this.query.reset();
@@ -315,6 +364,11 @@ module.exports.define("eachItem", function (funct) {
             }
         });
     }
+});
+
+
+module.exports.define("populateRecordFromQuery", function () {
+    this.record.populate(this.query.resultset);
 });
 
 
@@ -480,6 +534,43 @@ module.exports.define("getFootElement", function (render_opts) {
 
 module.exports.define("renderItem", function (parent_elmt, render_opts, item) {
     this.throwError("this function must be overridden");
+});
+
+
+module.exports.defbind("setQueryLimitsIfDynamic", "renderBeforeItems", function (render_opts) {
+    if (this.query_mode === "dynamic") {
+        this.setQueryLimits(render_opts);
+    }
+});
+
+
+module.exports.define("setQueryLimits", function (render_opts) {
+    var itemset_size = this.itemset_size;
+    if (!this.query) {
+        this.throwError("no query object");
+    }
+    if (render_opts.long_lists && itemset_size < this.itemset_size_long_lists) {
+        itemset_size = this.itemset_size_long_lists;
+    }
+    if (this.hide_detail_rows) {
+        this.itemset = 1;
+        this.query.limit_offset = 0;
+        this.query.limit_row_count = 0;
+    } else if (render_opts && render_opts.long_lists) {
+        this.recordset = 1;
+        this.query.limit_offset = 0;
+        this.query.limit_row_count = itemset_size;
+    } else {
+        this.query.limit_offset = ((this.itemset - 1) * itemset_size);
+        this.query.limit_row_count = itemset_size;
+        if (this.include_query_row_before_itemset && (this.itemset > 1)) {
+            this.query.limit_offset -= 1;
+            this.query.limit_row_count += 1;
+        }
+        if (this.include_query_row_after_itemset) {
+            this.query.limit_row_count += 1;
+        }
+    }
 });
 
 
