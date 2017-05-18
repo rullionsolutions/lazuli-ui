@@ -11,7 +11,7 @@ module.exports = Core.Base.clone({
     page_key: null,         // String page key (if required), brace detokenization, e.g. {page_key}
     label: null,            // Text label of link
     css_class: "btn btn-primary",            // CSS class for link, defaults to 'btn'
-    arrow_icon: " &#10148;",
+    arrow_icon: "&nbsp;&#10148;",
 });
 
 
@@ -93,7 +93,10 @@ module.exports.define("render", function (parent_elmt, render_opts) {
         }
         link_elmt.attr("title", tooltip);
     }
-    link_elmt.text(this.getLabel() + (this.arrow_icon || ""));
+    link_elmt.makeElement("span", "css_link_text").text(this.getLabel());
+    if (this.arrow_icon) {
+        link_elmt.text(this.arrow_icon);
+    }
     return link_elmt;
 });
 
