@@ -13,11 +13,13 @@ module.exports = Core.Base.clone({
     visible: true,
     width: "100%",
     tb_span: 12,        // replacing width
+    panel_inverse: true,
     right_align_numbers: false,
     allow_panel_expand: true,
     allow_panel_reload: false,
     allow_panel_collapse: true,
     allow_panel_remove: true,
+    panel_initially_collapsed: false,
 });
 
 
@@ -105,7 +107,7 @@ module.exports.define("getSectionElement", function (render_opts) {
 module.exports.define("makePanelSectionElement", function (render_opts) {
     var outer_div_elmt = this.parent_elem
         .makeElement("div", this.getCSSClass(), this.id)
-        .makeElement("div", "panel");     /* panel-inverse */
+        .makeElement("div", "panel" + (this.panel_inverse ? " panel-inverse" : ""));
     var heading_elmt = outer_div_elmt.makeElement("div", "panel-heading");
     var button_grp_elmt = heading_elmt.makeElement("div", "panel-heading-btn");
     var sctn_elmt;
@@ -132,6 +134,9 @@ module.exports.define("makePanelSectionElement", function (render_opts) {
     }
     this.makeSectionTitle(heading_elmt, render_opts);
     sctn_elmt = outer_div_elmt.makeElement("div", "panel-body");
+    if (this.panel_initially_collapsed) {
+        sctn_elmt.attr("style", "display: none;");
+    }
     this.makeSectionText(sctn_elmt, render_opts);
     this.makeSectionStyle(sctn_elmt, render_opts);
     return sctn_elmt;

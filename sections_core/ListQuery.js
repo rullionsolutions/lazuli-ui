@@ -108,7 +108,7 @@ module.exports.define("addRowControlColumn", function () {
         }),
     });
     this.row_control_col.override("renderHeader", function (row_elmt, render_opts) {
-        row_elmt.addChild("th", null, "css_row_control");
+        row_elmt.makeElement("th", "css_row_control css_sticky_col");
     });
     this.row_control_col.override("renderCell", function (row_elem, render_opts, ignore, row_obj) {
         if (this.dynamic_only && render_opts.dynamic_page === false) {

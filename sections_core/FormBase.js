@@ -10,6 +10,7 @@ module.exports = UI.Section.clone({
     columns: 1,
     // for Create/Update/Display, or "basic", form-inline", "form-inline-labelless", or "table-cell"
     layout: "form-horizontal",
+    form_bordered: true,
     hide_section_if_empty: true,
     hide_blank_uneditable_fields: true,
 });
@@ -79,7 +80,7 @@ module.exports.defbind("renderFormBase", "render", function (render_opts) {
 module.exports.define("getFormElement", function (fieldset, render_opts) {
     if (!this.form_elem) {
         this.form_elem = this.getSectionElement(render_opts)
-            .makeElement("form", fieldset.getTBFormType(this.layout));
+            .makeElement("form", fieldset.getTBFormType(this.layout) + (this.form_bordered ? " form-bordered" : ""));
     }
     return this.form_elem;
 });

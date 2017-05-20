@@ -142,7 +142,7 @@ module.exports.define("addSelectionColumn", function () {
 
     /* Override Start */
     this.selection_col.override("renderHeader", function (row_elmt, render_opts) {
-        var elmt = row_elmt.makeElement("th", "css_mr_sel");
+        var elmt = row_elmt.makeElement("th", "css_mr_sel css_sticky_col");
         elmt.makeElement("span", "glyphicon glyphicon-ok");
     });
     this.selection_col.override("renderCell", function (row_elem, render_opts) {
