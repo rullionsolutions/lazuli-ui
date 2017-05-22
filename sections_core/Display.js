@@ -7,7 +7,7 @@ var UI = require("lazuli-ui/index.js");
 */
 module.exports = UI.FormBase.clone({
     id: "Display",
-    // layout: "form-horizontal-readonly",
+    layout: "form-horizontal-readonly",
 });
 
 
