@@ -24,11 +24,14 @@ module.exports.override("setupLoadQuery", function () {
 });
 
 
+module.exports.defbind("initializeFieldRows", "cloneInstance", function () {
+    this.field_rows = {};
+});
+
 module.exports.defbind("setupLogic", "setup", function () {
     var template = this;
     var entity = Data.entities.get(this.base_entity_id);
 
-    this.field_rows = {};
     entity.each(function (field) {
         if (!template.field_rows[template.id + "_" + field.id] &&
                 (!template.base_field_group || template.base_field_group === field.field_group)) {
