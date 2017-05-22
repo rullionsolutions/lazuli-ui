@@ -796,7 +796,6 @@ module.exports.define("renderSections", function (page_elem, render_opts, page_t
     var that = this;
     var div_elem;
     var row_span = 0;
-    var tab;
 
     function getSectionParentElement(section_span) {
         row_span += section_span;
@@ -812,7 +811,7 @@ module.exports.define("renderSections", function (page_elem, render_opts, page_t
         div_elem = sections_elem;
     }
     this.sections.each(function (section) {
-        tab = section.tab && this.tabs.get(section.tab);
+        var tab = section.tab && that.tabs.get(section.tab);
         if (section.visible && section.accessible !== false && (!tab || tab.visible)
                 && (render_opts.all_sections || !tab || section.tab === page_tab_id)) {
             section.render(getSectionParentElement, render_opts);
