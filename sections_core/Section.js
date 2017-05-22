@@ -78,9 +78,9 @@ module.exports.define("overrideEntity", function (entity_id) {
 * @param x.XmlStream object representing the section-containing div; 'render_opts' object map that
 * controls aspects of page appearance
 */
-module.exports.define("render", function (element, render_opts) {
+module.exports.define("render", function (getSectionParentElement, render_opts) {
     this.sctn_elem = null;
-    this.parent_elem = element;
+    this.getSectionParentElement = getSectionParentElement;
     if (!this.hide_section_if_empty) {
         this.getSectionElement(render_opts);
     }
@@ -105,7 +105,7 @@ module.exports.define("getSectionElement", function (render_opts) {
 
 
 module.exports.define("makePanelSectionElement", function (render_opts) {
-    var outer_div_elmt = this.parent_elem
+    var outer_div_elmt = this.getSectionParentElement(this.tb_span)
         .makeElement("div", this.getCSSClass(), this.id)
         .makeElement("div", "panel" + (this.panel_inverse ? " panel-inverse" : ""));
     var heading_elmt = outer_div_elmt.makeElement("div", "panel-heading");

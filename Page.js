@@ -793,29 +793,31 @@ module.exports.define("render", function (element, render_opts) {
 */
 module.exports.define("renderSections", function (page_elem, render_opts, page_tab_id) {
     var sections_elem = page_elem.makeElement("div", null, "css_payload_page_sections");
+    var that = this;
     var div_elem;
     var row_span = 0;
-    var i;
-    var section;
     var tab;
+
+    function getSectionParentElement(section_span) {
+        row_span += section_span;
+        if (!that.flexbox_section_layout && (!div_elem || row_span > 12)) {
+            div_elem = sections_elem.makeElement("div", "row");
+            row_span = section_span;
+        }
+        return div_elem;
+    }
 
     if (this.flexbox_section_layout) {
         sections_elem.attr("class", "flexbox");
         div_elem = sections_elem;
     }
-    for (i = 0; i < this.sections.length(); i += 1) {
-        section = this.sections.get(i);
+    this.sections.each(function (section) {
         tab = section.tab && this.tabs.get(section.tab);
         if (section.visible && section.accessible !== false && (!tab || tab.visible)
                 && (render_opts.all_sections || !tab || section.tab === page_tab_id)) {
-            row_span += section.tb_span;
-            if (!this.flexbox_section_layout && (!div_elem || row_span > 12)) {
-                div_elem = sections_elem.makeElement("div", "row");
-                row_span = section.tb_span;
-            }
-            section.render(div_elem, render_opts);
+            section.render(getSectionParentElement, render_opts);
         }
-    }
+    });
     return sections_elem;
 });
 
