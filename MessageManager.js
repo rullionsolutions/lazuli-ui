@@ -16,9 +16,6 @@ module.exports.define("render", function (elmt, tag, prefix, type) {
         if ((!tag || msg[tag] !== false) && (!type || type === msg.type)) {
             msg_elmt = elmt.makeElement("div");
             msg_elmt.attr("data-msg-type", msg.type);
-            if (msg.title) {
-                msg_elmt.attr("data-msg-title", msg.title);
-            }
             if (msg.link) {
                 msg_elmt.attr("data-msg-link", msg.link);
             }
