@@ -105,12 +105,27 @@ module.exports.define("getSectionElement", function (render_opts) {
 
 
 module.exports.define("makePanelSectionElement", function (render_opts) {
+    var sctn_elmt;
+    var show_heading = (this.title || this.generated_title);
     var outer_div_elmt = this.getSectionParentElement(this.tb_span)
         .makeElement("div", this.getCSSClass(), this.id)
         .makeElement("div", "panel" + (this.panel_inverse ? " panel-inverse" : ""));
+
+    if (show_heading) {
+        this.makePanelHeading(outer_div_elmt, render_opts);
+    }
+    sctn_elmt = outer_div_elmt.makeElement("div", "panel-body");
+    if (show_heading && this.panel_initially_collapsed) {
+        sctn_elmt.attr("style", "display: none;");
+    }
+    this.makeSectionText(sctn_elmt, render_opts);
+    this.makeSectionStyle(sctn_elmt, render_opts);
+    return sctn_elmt;
+});
+
+module.exports.define("makePanelHeading", function (outer_div_elmt, render_opts) {
     var heading_elmt = outer_div_elmt.makeElement("div", "panel-heading");
     var button_grp_elmt = heading_elmt.makeElement("div", "panel-heading-btn");
-    var sctn_elmt;
 
     if (this.allow_panel_expand) {
         button_grp_elmt.makeElement("a", "btn btn-xs btn-icon btn-circle btn-default")
@@ -133,13 +148,6 @@ module.exports.define("makePanelSectionElement", function (render_opts) {
             .makeElement("i", "fa fa-times");
     }
     this.makeSectionTitle(heading_elmt, render_opts);
-    sctn_elmt = outer_div_elmt.makeElement("div", "panel-body");
-    if (this.panel_initially_collapsed) {
-        sctn_elmt.attr("style", "display: none;");
-    }
-    this.makeSectionText(sctn_elmt, render_opts);
-    this.makeSectionStyle(sctn_elmt, render_opts);
-    return sctn_elmt;
 });
 
 
