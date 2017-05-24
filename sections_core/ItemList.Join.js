@@ -3,6 +3,166 @@
 var Core = require("lapis-core/index.js");
 var Data = require("lazuli-data/index.js");
 var SQL = require("lazuli-sql/index.js");
+var UI = require("lazuli-ui/index.js");
+
+var original_functions = {};
+
+
+UI.ItemList.define("join_limit", 2);
+
+
+UI.ItemList.defbind("setupJoins", "setup", function () {
+    this.joins = {};                // map of table aliases to JoinRecord objects
+    if (typeof this.allow_join_cols !== "boolean") {
+        this.allow_join_cols = this.owner.page.session.isUserInRole("sysmgr") || this.owner.page.session.isUserInRole("rl_admin");
+    }
+});
+
+
+UI.ItemList.define("isJoinLimitExceeded", function () {
+    var out = false;
+    if (typeof this.join_limit === "number") {
+        out = this.getActiveJoinCount() >= this.join_limit;
+    }
+    return out;
+});
+
+
+UI.ItemList.define("getActiveJoinCount", function () {
+    var that = this;
+    var out = 0;
+    Object.keys(this.joins).forEach(function (alias) {
+        if (that.joins[alias].active) {
+            out += 1;
+        }
+    });
+    return out;
+});
+
+
+UI.ItemList.defbind("updateJoins", "update", function (params) {
+    var regex1 = new RegExp("list_" + this.id + "_(\\w+)_join_col_(\\w+)");     // \1 is col id, \2 is operation
+    var regex2 = new RegExp("list_" + this.id + "_(\\w+)_join_rcd_(\\w+)");     // \1 is alias, \2 is operation
+    var match;
+
+    if (this.allow_join_cols && params.page_button) {
+        match = regex1.exec(params.page_button);
+        this.trace("updateJoins(): " + params.page_button + ", " + regex1.toString() + ", " + match);
+        if (match) {
+            this.columns.get(match[1]).updateJoin(match[2], params);
+        }
+        match = regex2.exec(params.page_button);
+        this.trace("updateJoins(): " + params.page_button + ", " + regex2.toString() + ", " + match);
+        if (match) {
+            if (!this.joins[match[1]]) {
+                this.throwError("unrecognized alias: " + match[1]);
+            }
+            this.joins[match[1]].updateJoin(match[2], params);
+        }
+    }
+});
+
+
+UI.ItemList.override("populateRecordFromQuery", function () {
+    var that = this;
+    this.record.populate(this.query.resultset);
+    Object.keys(this.joins).forEach(function (alias) {
+        that.joins[alias].populateRecordFromQuery();
+    });
+});
+
+
+original_functions.renderColumnChooser = UI.ItemList.renderColumnChooser;
+
+UI.ItemList.reassign("renderColumnChooser", function (render_opts) {
+    var foot_elmt = this.getFootElement();
+    this.debug("renderColumnChooser() reassigned, joins: " + Object.keys(this.joins));
+    if (this.allow_choose_cols) {
+        original_functions.renderColumnChooser.call(this, foot_elmt, render_opts);
+        // Render Join Column Choosers
+        this.renderJoinColumnChoosers(foot_elmt, render_opts);
+    }
+});
+
+
+UI.ItemList.define("renderJoinColumnChoosers", function (foot_elmt, render_opts) {
+    var that = this;
+    // this.join_choosers = 0;
+    Object.keys(this.joins).forEach(function (alias) {
+        that.debug("renderJoinColumnChoosers(): " + alias);
+        that.joins[alias].renderJoinColumnChooser(foot_elmt, render_opts);
+    });
+});
+
+
+UI.ItemList.Column.define("updateJoin", function (operation, params) {
+    if (operation === "remove_join") {
+        this.removeJoin();
+    } else if (operation === "add_join") {
+        this.addJoin();
+    }
+});
+
+
+UI.ItemList.Column.define("addJoin", function (opt) {
+    if (!this.field || !this.field.ref_entity) {
+        this.throwError("no field, or field has no ref_entity property");
+    }
+    if (this.join) {
+        this.join.reactivate();
+    } else {
+        if (this.owner.section.isJoinLimitExceeded() && !(opt && opt.ignore_limit)) {
+            this.throwError("join limit exceeded");
+        }
+        this.join = UI.ItemList.Join.clone({
+            id: this.id,
+            active: true,
+            instance: true,
+            section: this.owner.section,
+            entity_id: this.field.ref_entity,
+            origin_column: this,
+        });
+    }
+    return this.join;
+});
+
+
+UI.ItemList.Column.define("getJoin", function () {
+    return this.join;
+});
+
+
+original_functions.renderColumnChooserColumn = UI.ItemList.Column.renderColumnChooser;
+
+UI.ItemList.Column.reassign("renderColumnChooser", function (ctrl_elem, render_opts, list_id) {
+    var group_elem;
+    var join_added = this.getJoin() && this.getJoin().active;
+    var join_limit_hit = this.owner.section.isJoinLimitExceeded();
+
+    // If column is for a reference field add button group including join button
+    if (this.owner.section.allow_join_cols && this.field && this.field.ref_entity
+            && (!join_limit_hit || (join_limit_hit && join_added))) {
+        group_elem = ctrl_elem.makeElement("div", "btn-group css_list_cols_btn_group",
+            "list_" + list_id + "_" + this.id + "_join_col_show_hide");
+
+        group_elem.makeElement("button",
+            "btn btn-default btn-xs css_cmd " + (this.visible ? "active" : ""),
+            "list_" + list_id + "_" + this.id + "_join_col_" + (this.visible ? "hide" : "show"))
+            .attr("type", "button")
+            .attr("data-toggle", "button")
+            .text(this.label);
+
+        group_elem.makeElement("button",
+            "btn btn-default btn-xs css_cmd " + (join_added ? "active" : ""),
+            "list_" + list_id + "_" + this.id + "_join_col_" + (join_added ? "remove_join" : "add_join"))
+            .attr("type", "button")
+            .attr("data-toggle", "button")
+            .text(join_added ? "Remove Join" : "Add Join");      // Label TBD
+    } else {
+        original_functions.renderColumnChooserColumn.call(this, ctrl_elem, render_opts, list_id);
+    }
+});
+
 
 /**
 * To represent a column in a table
@@ -12,322 +172,171 @@ module.exports = Core.Base.clone({
 });
 
 
-module.exports.define("setupTable", function (/* query*/) {
-    this.record = Data.entities.getThrowIfUnrecognized(this.entity_id).clone({
-        id: this.entity_id,
-        skip_registration: true,
+module.exports.defbind("initialize", "cloneInstance", function () {
+    if (!this.section) {
+        this.throwError("section property is required");
+    }
+    this.origin_table = (this.origin_join && this.origin_join.table) || this.section.query.main;
+    this.record = Data.entities.getThrowIfUnrecognized(this.entity_id).getRecord({
+        page: this.section.owner.page,
     });
-    this.table = this.owner.section.query.addTable({ table: this.entity_id, });
-    this.alias = this.table.alias;
+    this.table = this.section.query.addTable({ table: this.entity_id, });
+    if (this.type) {
+        this.setType(this.type);
+    }
+    if (this.origin_column) {
+        this.setColumnCondition(this.origin_column);
+    }
+    if (!this.label && this.origin_column && this.origin_column.field) {
+        this.label = this.origin_column.field.label;
+    }
+    this.section.joins[this.table.alias] = this;
+    this.debug("added to " + this.section + ".joins[" + this.table.alias + "]");
 });
 
 
 module.exports.define("setType", function (type) {
-    if (type === SQL.Query.Table.types.outer_join || type === SQL.Query.Table.types.inner_join) {
-        this.table.type = type;
+    if (type !== SQL.Query.Table.types.outer_join && type !== SQL.Query.Table.types.inner_join) {
+        this.throwError("invalid join type: " + type);
     }
+    this.table.type = type;
 });
 
 
-module.exports.define("setCondition", function (addl_cond) {
-    var alias = this.owner_alias || "A";
-    var sql_funct = this.owner.section.columns.get(this.column_id).field.sql_function;
-    var join_value;
+module.exports.define("setColumnCondition", function (column) {
+    var origin_alias = this.origin_table.alias;
     var join_cond;
-
-    // Handle sql_function field
-    if (sql_funct) {
-        join_value = "(" + SQL.Connection.detokenizeAlias(sql_funct, alias) + ")";
+    if (!column.field) {
+        this.throwError("column must have a field property");
+    }
+    if (column.field.sql_function) {
+        join_cond = "?._key = ("
+            + SQL.Connection.detokenizeAlias(column.field.sql_funct, origin_alias) + ")";
     } else {
-        join_value = alias + "." + this.field_id;
+        join_cond = "?._key = " + origin_alias + "." + column.field.id;
     }
-    join_cond = "?._key = " + join_value;
-    if (addl_cond) {
-        join_cond += " AND (" + addl_cond + ")";
-    }
+    this.setCondition(join_cond);
+});
 
-    join_cond = SQL.Connection.detokenizeAlias(join_cond, this.alias);
+
+module.exports.define("setCondition", function (join_cond) {
+    join_cond = SQL.Connection.detokenizeAlias(join_cond, this.table.alias);
     this.table.join_cond = join_cond;
 });
 
 
-module.exports.define("addFields", function () {
-    var that = this;
-    this.record.each(function (field) {
-        field.query_column = this.table_alias + (field.sql_function ? "_" : ".") + field.id;
-        if (field.accessible !== false) {
-            that.section.addColumn(field);
-        }
-    });
+module.exports.define("populateRecordFromQuery", function () {
+    this.record.populate(this.section.query.resultset);
 });
 
 
-module.exports.define("addField", function (ignore /*join_record*/, field) {
-    if (field.accessible !== false) {
-        this.fields.push({
-            id: field.id, label: field.label, column_id: this.alias + "_" + field.id,
-            sql_column: this.alias + (field.sql_function ? "_" : ".") + field.id,
-            is_ref: (field.ref_entity !== undefined) // this boolean indicates that this field is a reference field and is therefore 'join-able'. (w/o storing a field object)
-        });
-        this.addFieldToRecord(field);
-    }
-});
-
-
-module.exports.define("addFieldToRecord", function (field) {
-    var sctn = this.owner.section,
-        i = "",
-        col_id = this.alias + "_" + field.id;
-
-    //Override entity
-    field.id = col_id;
-    field.table_alias = this.alias;
-    field.join_column = this.column_id;
-
-    sctn.record.addField(field);
-    //Not sure why I have to do this? All of this should be in the spec
-    for (i in field) {
-        if (typeof field[i] !== "function" && i !== "query_column") {
-            sctn.record.getField(col_id)[i] = field[i];
-        }
-    }
-    sctn.record.getField(col_id).query_column = null;//Keeps field out of the section query until the column is active
-});
-
-
-module.exports.define("update", function (opt) {
-    var prev_active = this.active;
-
-    if (opt) {
-        if (typeof opt.active === "boolean") {
-            this.active = opt.active;
-            this.table.active = opt.active;
-
-            if (prev_active !== this.active) {
-                this.updateColumns();
-            }
-        }
-        if (typeof opt.type === "string") {
-            this.setType(opt.type);
-        }
-        if (typeof opt.cond === "string") {
-            this.setCondition(opt.cond);
-        }
-    }
-});
-
-
-//Deactivates/reactivate column based upon whether this join is activate or not
-module.exports.define("updateColumns", function () {
-    var sctn = this.owner.section,
-        col,
-        i;
-
-    for (i = 0; i < sctn.columns.length(); i += 1) {
-        col = sctn.columns.get(i);
-        if (col.join_id === this.id) {
-            if (this.active) {
-                col.field.query_column = col.field.sql_column;
-            } else {
-                col.visible = false;
-                col.query_column.sort_seq = null;
-                col.field.query_column = null;//Nullifying this excludes the column from this section's query
-                col.removeJoin();//If there is a join based on this column remove it
-            }
-        }
+module.exports.define("updateJoin", function (operation, params) {
+    if (operation.indexOf("add_col_") === 0) {
+        this.showColumn(operation.substr(8));
+    } else if (operation === "show" || operation === "add_join") {
+        this.addJoin();         // TODO
+    } else if (operation === "remove_join_btn") {
+        this.deactivate();
+    } else if (operation === "inner_join_enable" || operation === "outer_join_disable") {
+        this.setType(SQL.Query.Table.types.inner_join);
+    } else if (operation === "outer_join_enable" || operation === "inner_join_disable") {
+        this.setType(SQL.Query.Table.types.outer_join);
     }
 });
 
 
 module.exports.define("deactivate", function (opt) {
-    opt = opt || {};
-    opt.active = false;
-    opt.type = ((opt && opt.type) ? opt.type : x.sql.outer_join);
-    this.update(opt);
+    this.active = false;
+    this.table.active = false;
 });
 
 
 module.exports.define("reactivate", function (opt) {
-    opt = opt || {};
-    opt.active = true;
-    opt.type = ((opt && opt.type) ? opt.type : x.sql.outer_join);
-    this.update(opt);
+    this.active = true;
+    this.table.active = true;
 });
 
 
-module.exports.define("getFieldObj", function (id) {
-    var i,
-        field = null;
-
-    for (i = 0; i < this.fields.length; i += 1) {
-        if (this.fields[i].id === id) {
-            field = this.fields[i];
-            break;
-        }
+module.exports.define("showColumn", function (field_id) {
+    var col = this.section.columns.get(this.table.alias + "." + field_id);
+    if (col) {
+        col.visible = true;
+    } else {
+        this.addColumn(field_id);
     }
-
-    return field;
 });
 
 
 module.exports.define("addColumn", function (field_id) {
-    var sctn  = this.owner.section,
-        field = this.getFieldObj(field_id),
-        column,
-        col_id;
-
-    if (field) {
-        col_id = field.column_id;
-
-        sctn.record.getField(col_id).query_column = field.sql_column;
-        //sql_column is used to repopulate query_column if this column is deactivated
-        sctn.record.getField(col_id).sql_column = field.sql_column;
-
-        //Add column to query
-        if (!sctn.query.getColumn(col_id)) {
-            this.table.addColumn({ name: field.id, sql_function: sctn.record.getField(col_id).sql_function });
-        }
-
-        column = sctn.columns.add({
-            field: sctn.record.getField(col_id),
-            label: this.label + " - " + field.label,
-            query_column: sctn.query.getColumn(sctn.record.getField(col_id).query_column),
-            visible: false
-        });
-
-        //add join_id property to the column
-        column.join_id = this.id;
-
-        //Position Column based on field order
-        this.positionColumn(column, field);
-    }
-    return column;
-});
-
-
-module.exports.define("positionColumn", function (column, field) {
-    var sctn  = this.owner.section,
-        i,
-        col_index   = -1,
-        col_reached = false,
-        col_after   = false;
-
-    for (i = 0; i < this.fields.length; i += 1) {
-        if (this.fields[i].id === field.id) {
-            col_reached = true;
-            continue;
-        }
-        if (sctn.columns.indexOf(this.alias + "_" + this.fields[i].id) === -1) {
-            continue;
-        }
-        col_index = sctn.columns.indexOf(this.alias + "_" + this.fields[i].id);
-        if (col_reached) {
-            col_after = true;
-            break;
-        }
-    }
-    if (col_index !== -1) {
-        sctn.columns.moveTo(column.id, col_index + (col_after ? 0 : 1));
-    }
-
-    //Move Row Control to the end - should always be the last control
-    if (sctn.row_control_col) {
-        sctn.columns.moveTo(sctn.row_control_col.id, sctn.columns.length() - 1);
-    }
+    var field = this.record.getField(field_id);
+    var query_column = field.addColumnToTable(this.table);
+    var col = this.section.columns.add({
+        id: this.table.alias + "." + field.id,
+        field: field,
+        label: this.label + " / " + this.field.label,
+        query_column: query_column,
+    });
+    field.query_column = query_column.id;       // anomaly!
+    this.trace("Adding field as column: " + field.id + " to section " + this.section.id
+        + ", query_column: " + query_column);
+    return col;
 });
 
 
 module.exports.define("renderJoinColumnChooser", function (foot_elem, render_opts) {
-    var sctn      = this.owner.section,
-        ctrl_elem = foot_elem.addChild("div", "css_list_choose_cols_join_" + this.id,
-            "css_list_choose_cols" + (sctn.show_choose_cols ? "" : " css_hide")),
-        label     = this.label,
-        header_elem,
-        opt_elem,
-        group_elem,
-        filter_elem,
-        filter_input,
-        i;
+    var that = this;
+    var ctrl_elem = foot_elem.makeElement("div",
+        "css_list_choose_cols" + (this.section.show_choose_cols ? "" : " css_hide"),
+        "css_list_choose_cols_join_" + this.id);
+    var header_elem = ctrl_elem.makeElement("div", "css_list_choose_cols_header");
+    var is_outer_join = (this.table.type === SQL.Query.Table.types.outer_join);
+    var opt_elem;
+    var group_elem;
 
-    //Append joins allowed count to label
-    if (sctn.isJoinLimitExceeded()) {
-        sctn.join_choosers += 1;
-        label += " ("+sctn.join_choosers+" of "+sctn.join_limit+")";
+    header_elem.makeElement("div", "span6")
+        .makeElement("h4").text(this.label);
+
+    opt_elem = header_elem.makeElement("div", "span6");
+
+    if (this.section.allow_join_cols) {
+        opt_elem.makeElement("button", "css_remove_join_btn css_cmd close pull-right",
+            "list_" + this.section.id + "_" + this.table.alias + "_join_rcd_remove_join_btn", "X");
+
+        group_elem = opt_elem.makeElement("div", "btn-group pull-right css_list_choose_cols_join_type_btn_group",
+            "list_" + this.section.id + "_" + this.table.alias + "_join_rcd_join_type");
+
+        group_elem.makeElement("button",
+            "btn btn-default btn-xs css_cmd " + (is_outer_join ? "active" : ""),
+            "list_" + this.section.id + "_" + this.table.alias + "_join_rcd_outer_join" + (is_outer_join ? "_disable" : "_enable"))
+            .attr("type", "button")
+            .attr("data-toggle", "button")
+            .text("Outer Join");
+
+        group_elem.makeElement("button",
+            "btn btn-default btn-xs css_cmd " + (is_outer_join ? "active" : ""),
+            "list_" + this.section.id + "_" + this.table.alias + "_join_rcd_inner_join" + (is_outer_join ? "_disable" : "_enable"))
+            .attr("type", "button")
+            .attr("data-toggle", "button")
+            .text("Inner Join");
     }
 
-    header_elem = ctrl_elem.addChild("div", null, "css_list_choose_cols_header");
-    header_elem.addChild("div", null, "span6")
-               .addChild("h4", null, null, label);
-
-    opt_elem = header_elem.addChild("div", null, "span6");
-    if (sctn.allow_join_cols) {
-        opt_elem.addChild("button","list_" + sctn.id + "_join_col_" + this.id + "_remove_join_btn", "css_remove_join_btn css_cmd close pull-right", "X");
-        group_elem = opt_elem.addChild("div", "list_" + sctn.id + "_join_col_" + this.id + "_join_type", "btn-group pull-right css_list_choose_cols_join_type_btn_group");
-        group_elem.addChild("button", "list_" + sctn.id + "_join_col_" + this.id + "_outer_join" + (this.table.type ===  x.sql.outer_join ? "_disable" : "_enable"),
-                "btn btn-default btn-mini css_cmd " + (this.table.type ===  x.sql.outer_join ? "active" : ""))
-            .attribute("type", "button")
-            .attribute("data-toggle", "button")
-            .addText("Outer Join");
-        group_elem.addChild("button", "list_" + sctn.id + "_join_col_" + this.id + "_inner_join" + (this.table.type ===  x.sql.inner_join ? "_disable" : "_enable"),
-                "btn btn-default btn-mini css_cmd " + (this.table.type ===  x.sql.inner_join ? "active" : ""))
-            .attribute("type", "button")
-            .attribute("data-toggle", "button")
-            .addText("Inner Join");
-    }
-
-    filter_elem = ctrl_elem.addChild("span", null, "css_list_cols_filter");
-    filter_input = filter_elem.addChild("input", null, "input-medium")
-        .attribute("placeholder", "Filter Columns")
-        .attribute("type", "text")
-        .attribute("name", "cols_filter_" + sctn.id + "_" + this.id);
-    if (this.cols_filter) {
-        filter_input.attribute("value", this.cols_filter);
-    }
-
-    for (i = 0; i < this.fields.length; i += 1) {
-        this.renderJoinColumnChooserField(this.fields[i], ctrl_elem, render_opts);
-    }
+    this.record.each(function (field) {
+        that.renderJoinColumnChooserField(field, ctrl_elem, render_opts);
+    });
 });
 
 
-module.exports.define("renderJoinColumnChooserField", function (field, ctrl_elem /* , render_opts*/) {
-    var sctn = this.owner.section;
-    var group_elem;
-    var col_id = field.column_id;
-    var col = null;
-    var join_added;
-    var join_limit_hit;
-
-    if (!field.label.trim()) {
-        return;
-    }
-    if (sctn.columns.indexOf(col_id) !== -1) {
-        col = sctn.columns.get(col_id);
-    }
-
-    // Can't use column.getJoin as column may not exist
-    join_added = (sctn.joins.indexOf(col_id) !== -1 && sctn.joins.get(col_id).active);
-    join_limit_hit = sctn.isJoinLimitExceeded();
-
-    if (sctn.allow_join_cols && field.is_ref
-            && (!join_limit_hit || (join_limit_hit && join_added))) {
-        group_elem = ctrl_elem.addChild("div", "list_" + sctn.id + "_join_col_" + col_id + "_show_hide", "btn-group css_list_cols_btn_group");
-        group_elem.addChild("button", "list_" + sctn.id + "_join_col_" + col_id + ((col && col.visible) ? "_hide" : "_show"),
-                "btn btn-default btn-mini css_cmd " + ((col && col.visible) ? "active" : ""))
-            .attribute("type", "button")
-            .attribute("data-toggle", "button")
-            .addText(field.label);
-        group_elem.addChild("button", "list_" + sctn.id + "_join_col_" + col_id + (join_added ? "_remove_join" : "_add_join"),
-                "btn btn-default btn-mini css_cmd " + (join_added ? "active" : ""))
-            .attribute("type", "button")
-            .attribute("data-toggle", "button")
-            .addText(join_added ? "Remove Join" : "Add Join"); // Label TBD
+module.exports.define("renderJoinColumnChooserField", function (field, ctrl_elem, render_opts) {
+    var col = this.section.columns.get(this.table.alias + "." + field.id);
+    this.debug("renderJoinColumnChooserField(): " + field);
+    if (col) {
+        col.renderColumnChooser(ctrl_elem, render_opts, this.section.id);
     } else {
-        ctrl_elem.addChild("button", "list_" + sctn.id + "_join_col_" + col_id + ((col && col.visible) ? "_hide" : "_show"),
-                "btn btn-default btn-mini css_cmd " + ((col && col.visible) ? "active" : ""))
-            .attribute("type", "button")
-            .attribute("data-toggle", "button")
-            .addText(field.label);
+        ctrl_elem.makeElement("button", "btn btn-default btn-xs css_cmd",
+            "list_" + this.section.id + "_" + this.table.alias + "_join_rcd_add_col_" + field.id)
+            .attr("type", "button")
+            .attr("data-toggle", "button")
+            .text(field.label);
     }
 });
 

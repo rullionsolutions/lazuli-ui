@@ -131,16 +131,15 @@ module.exports.define("addRowControlColumn", function () {
 * @return new column object
 */
 module.exports.define("addColumn", function (field) {
-    var query_column = this.query.getColumn(field.query_column);
     var col;
-    if (!query_column) {
-        this.warn("No query_column: " + field);
+    if (!field.query_column) {
+        this.warn("field has no query_column: " + field);
     }
     col = this.columns.add({
         field: field,
-        query_column: query_column,
     });
-    this.trace("Adding field as column: " + field.id + " to section " + this.id + ", query_column: " + query_column);
+    this.trace("Adding field as column: " + field.id + " to section " + this.id
+        + ", query_column: " + field.query_column);
     return col;
 });
 
@@ -152,27 +151,12 @@ module.exports.define("addColumn", function (field) {
 */
 module.exports.define("addFunction", function (spec) {
     var field;
-    var query_column;
-    var col;
-
-    spec.name = spec.id;
     if (typeof spec.list_column !== "boolean") {
         spec.list_column = true;            // visible unless overridden by visible property
     }
     field = this.record.addField(spec);
-    query_column = field.addColumnToTable(this.query.main, spec);
-    field.query_column = query_column.id;
-    col = this.columns.add({
-        field: field,
-        query_column: query_column,
-    });
-
-    if (this.row_control_col) {
-        this.columns.moveTo("_row_control", (this.columns.length() - 1));
-    }
-
-    this.debug("Adding function as column: " + field.id + " to section " + this.id + ", query_column: " + query_column);
-    return col;
+    field.query_column = field.addColumnToTable(this.query.main);
+    return this.addColumn(field);
 });
 
 

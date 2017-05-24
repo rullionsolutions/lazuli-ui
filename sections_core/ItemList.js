@@ -62,16 +62,18 @@ module.exports.defbind("setupColumns", "setup", function () {
 * @return new column object
 */
 module.exports.define("addColumn", function (field) {
-    var query_column = this.query.getColumn(field.query_column);
     var col;
-    if (!query_column) {
-        this.warn("No query_column: " + field);
+    if (!field.query_column) {
+        this.warn("field has no query_column: " + field);
     }
     col = this.columns.add({
         field: field,
-        query_column: query_column,
     });
-    this.trace("Adding field as column: " + field.id + " to section " + this.id + ", query_column: " + query_column);
+    if (this.row_control_field && this.columns.get(this.row_control_field.id)) {
+        this.columns.moveTo(this.row_control_field.id, (this.columns.length() - 1));
+    }
+    this.trace("Adding field as column: " + field.id + " to section " + this.id
+        + ", query_column: " + field.query_column);
     return col;
 });
 
@@ -83,27 +85,12 @@ module.exports.define("addColumn", function (field) {
 */
 module.exports.define("addFunction", function (spec) {
     var field;
-    var query_column;
-    var col;
-
-    spec.name = spec.id;
     if (typeof spec.list_column !== "boolean") {
         spec.list_column = true;            // visible unless overridden by visible property
     }
     field = this.record.addField(spec);
-    query_column = field.addColumnToTable(this.query.main, spec);
-    field.query_column = query_column.id;
-    col = this.columns.add({
-        field: field,
-        query_column: query_column,
-    });
-
-    if (this.row_control_field) {
-        this.columns.moveTo(this.row_control_field.id, (this.columns.length() - 1));
-    }
-
-    this.debug("Adding function as column: " + field.id + " to section " + this.id + ", query_column: " + query_column);
-    return col;
+    field.query_column = field.addColumnToTable(this.query.main);
+    return this.addColumn(field);
 });
 
 
@@ -543,30 +530,42 @@ module.exports.define("renderAggregations", function (render_opts) {
 */
 module.exports.columns.override("add", function (col_spec) {
     var column;
+    var copy_field_prop = {
+        id: { field_prop: "id", },
+        label: { field_prop: "label", },
+        visible: { field_prop: "list_column", },
+        query_column: { field_prop: "query_column", },
+        description: { field_prop: "description", },
+        aggregation: { field_prop: "aggregation", },
+        separate_row: { field_prop: "separate_row", },
+        sortable: { field_prop: "sortable", },
+        css_class: { default: "", },
+        css_class_col_header: { field_prop: "css_class_col_header", },
+        css_class_col_cell: { field_prop: "css_class_col_cell", },
+        sticky: { field_prop: "sticky_column", },
+        width: { field_prop: "col_width", },
+        min_width: { field_prop: "min_col_width", },
+        max_width: { field_prop: "max_col_width", },
+        tb_input: { field_prop: "tb_input_list", },
+        group_label: { field_prop: "col_group_label", },
+        decimal_digits: {
+            field_prop: "decimal_digits",
+            default: 0,
+        },
+    };
     if (col_spec.field) {
         if (col_spec.field.accessible === false) {
             return null;
         }
-        col_spec.id = col_spec.id || col_spec.field.id;
-        col_spec.label = col_spec.label || col_spec.field.label;
-        col_spec.css_class = col_spec.css_class || "";
-        col_spec.width = col_spec.width || col_spec.field.col_width;
-        col_spec.min_width = col_spec.min_width || col_spec.field.min_col_width;
-        col_spec.max_width = col_spec.max_width || col_spec.field.max_col_width;
-        col_spec.description = col_spec.description || col_spec.field.description;
-        col_spec.aggregation = col_spec.aggregation || col_spec.field.aggregation;
-        col_spec.separate_row = col_spec.separate_row || col_spec.field.separate_row;
-        col_spec.decimal_digits = col_spec.decimal_digits || col_spec.field.decimal_digits || 0;
-        col_spec.sortable = col_spec.sortable || col_spec.field.sortable;
-        col_spec.sticky = col_spec.sticky || col_spec.field.sticky_column;
-        col_spec.css_class_col_header = col_spec.css_class_col_header || col_spec.field.css_class_col_header;
-        col_spec.css_class_col_cell = col_spec.css_class_col_cell || col_spec.field.css_class_col_cell;
-        col_spec.tb_input = col_spec.tb_input || col_spec.field.tb_input_list;
-        col_spec.group_label = col_spec.group_label || col_spec.field.col_group_label;
-
-        if (typeof col_spec.visible !== "boolean") {
-            col_spec.visible = col_spec.field.list_column;
-        }
+        Object.keys(copy_field_prop).forEach(function (prop) {
+            var copy_field_spec = copy_field_prop[prop];
+            if (typeof col_spec[prop] === "undefined" && copy_field_spec.field_prop) {
+                col_spec[prop] = col_spec.field[copy_field_spec.field_prop];
+            }
+            if (typeof col_spec[prop] === "undefined" && copy_field_spec.default) {
+                col_spec[prop] = copy_field_spec.default;
+            }
+        });
         col_spec.field.visible = true;              // show field content is column is visible
     }
     if (typeof col_spec.label !== "string") {
