@@ -52,6 +52,10 @@ module.exports.defbind("setupColumns", "setup", function () {
             that.addColumn(field);
         }
     });
+    // Move row control field to left-hand side
+    if (this.row_control_field) {
+        this.columns.moveTo(this.row_control_field.id, 0);
+    }
 });
 
 
@@ -69,9 +73,9 @@ module.exports.define("addColumn", function (field) {
     col = this.columns.add({
         field: field,
     });
-    if (this.row_control_field && this.columns.get(this.row_control_field.id)) {
-        this.columns.moveTo(this.row_control_field.id, (this.columns.length() - 1));
-    }
+    // if (this.row_control_field && this.columns.get(this.row_control_field.id)) {
+    //     this.columns.moveTo(this.row_control_field.id, (this.columns.length() - 1));
+    // }
     this.trace("Adding field as column: " + field.id + " to section " + this.id
         + ", query_column: " + field.query_column);
     return col;

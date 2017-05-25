@@ -192,6 +192,13 @@ module.exports.defbind("initialize", "cloneInstance", function () {
     }
     this.section.joins[this.table.alias] = this;
     this.debug("added to " + this.section + ".joins[" + this.table.alias + "]");
+
+    // Joined record field columns are NOT all added to the query object immediately
+    // but only on demand. record.populate() should only try to call field.setFromResultSet()
+    // on the fields whose query columns have been added
+    this.record.each(function (field) {
+        field.ignore_in_query = true;
+    });
 });
 
 
@@ -268,18 +275,19 @@ module.exports.define("showColumn", function (field_id) {
 
 
 module.exports.define("addColumn", function (field_id) {
+    var column;
     var field = this.record.getField(field_id);
-    var query_column = field.addColumnToTable(this.table);
-    var col = this.section.columns.add({
-        id: this.table.alias + "." + field.id,
+    field.query_column = field.addColumnToTable(this.table);
+    delete field.ignore_in_query;
+    column = this.section.columns.add({
+        id: field.query_column.name,
         field: field,
-        label: this.label + " / " + this.field.label,
-        query_column: query_column,
+        label: this.label + " / " + field.label,
+        visible: true,
     });
-    field.query_column = query_column.id;       // anomaly!
-    this.trace("Adding field as column: " + field.id + " to section " + this.section.id
-        + ", query_column: " + query_column);
-    return col;
+    this.debug("Adding field as column: " + column.id + " to section " + this.section.id
+        + ", query_column: " + field.query_column);
+    return column;
 });
 
 
