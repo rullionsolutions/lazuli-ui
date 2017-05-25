@@ -10,6 +10,8 @@ module.exports = UI.Page.clone({
     redirect_page: null,        // where to go to afterwards
     title: "Bulk Action",
     security: { all: true, },
+    skin: "modal",
+    requires_key: true,
 });
 
 
@@ -22,8 +24,8 @@ module.exports.sections.addAll([
 ]);
 
 
-module.exports.sections.get("info").override("render", function (element, render_opts) {
-    var child = element.makeElement("div");
+module.exports.sections.get("info").defbind("renderBulkModal", "render", function (render_opts) {
+    var child = this.sctn_elem.makeElement("div");
     var bulk_actions = String(this.owner.page.selected_keys.length);
 
     child.attr("style", "margin-bottom: 10px");
@@ -142,8 +144,8 @@ module.exports.defbind("bulk", "updateAfterSections", function (params) {
         this.session.refer_section.resetToStart();
         this.session.refer_section.query.limit_offset = 0;
     }
-    if (params.selected_keys) {
-        this.selected_keys = JSON.parse(params.selected_keys.replace(/&quot;/gm, '"'));
+    if (params.selected_rows) {
+        this.selected_keys = params.selected_rows.split(",");
     }
     if (!this.selected_keys || this.selected_keys.length === 0) {
         this.throwError({ id: "no_records_selected", });
