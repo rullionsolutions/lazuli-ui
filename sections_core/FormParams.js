@@ -8,7 +8,6 @@ var Data = require("lazuli-data/index.js");
 */
 module.exports = UI.FormBase.clone({
     id: "FormParams",
-    panel_initially_collapsed: true,
 });
 
 
