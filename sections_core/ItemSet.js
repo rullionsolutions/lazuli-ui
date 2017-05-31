@@ -49,13 +49,22 @@ module.exports.defbind("initializeItemSet", "cloneInstance", function () {
 * To setup this grid, by setting 'entity' to the entity specified by 'entity', then calling
 */
 module.exports.define("setupRecord", function (entity_id) {
+    var spec = {
+        id: entity_id,
+        skip_registration: true,
+    };
+    if (this.query_mode === "dynamic") {
+        spec.page = this.owner.page;
+        spec.instance = true;
+        spec.id_prefix = "list_" + this.id;
+    }
     // this.record = Data.entities.getThrowIfUnrecognized(entity_id).clone({
     //     id: entity_id,
     //     skip_registration: true,
     // });
-    this.record = Data.entities.getThrowIfUnrecognized(entity_id).getRecord({
-        page: this.owner.page,
-    });
+    // if query_mode === "dynamic" then record object is used to store actual field values,
+    // so is an instance, otherwise it is used as the template for transaction records
+    this.record = Data.entities.getThrowIfUnrecognized(entity_id).clone(spec);
 });
 
 
@@ -91,12 +100,22 @@ module.exports.defbind("initializeParentRecord", "setup", function () {
 * (usually of Option type)
 * @return the field in entity specified by 'add_item_field'
 */
-module.exports.define("setupItemAdder", function (add_item_field_id, add_item_unique) {
+module.exports.define("setupItemAdder", function (spec) {
+    var type = Data.fields.getThrowIfUnrecognized(spec.type);
+    spec.id = "list_" + this.id + "_item_adder";
+    spec.label = this.add_item_label;
+    spec.btn_label = this.add_item_icon;
+    this.add_item_field = type.clone(spec);
+    this.add_item_field.override("getFormGroupCSSClass", function (form_type, editable) {
+        return type.getFormGroupCSSClass.call(this, form_type, editable) + " css_list_add";
+    });
+});
+
+
+module.exports.define("copyItemAdderFromExistingField", function (add_item_field_id, add_item_unique) {
     var orig_add_item_field = this.record.getField(add_item_field_id);
     var spec = {
-        id: "add_item_field_" + this.id,
         type: orig_add_item_field.type,
-        label: this.add_item_label,
         // tb_input: "input-sm",
         skip_full_load: false,        // make sure we have full lov here..
         input_group_size: "input-group-sm",
@@ -115,7 +134,7 @@ module.exports.define("setupItemAdder", function (add_item_field_id, add_item_un
     if (spec.type === "Reference") {
         spec.type = "Option";           // Autocompleter doesn't work here yet
     }
-    this.add_item_field = this.createItemAdderField(spec);
+    this.setupItemAdder(spec);
 
     this.add_item_unique = (typeof add_item_unique === "boolean") ?
         add_item_unique :
@@ -126,16 +145,6 @@ module.exports.define("setupItemAdder", function (add_item_field_id, add_item_un
     orig_add_item_field.list_column = false;
     // this.columns.get(this.add_item_field_id).editable = false;
     return orig_add_item_field;
-});
-
-
-module.exports.define("createItemAdderField", function (spec) {
-    var type = Data.fields.getThrowIfUnrecognized(spec.type);
-    var field = type.clone(spec);
-    field.override("getFormGroupCSSClass", function (form_type, editable) {
-        return type.getFormGroupCSSClass.call(this, form_type, editable) + " css_list_add";
-    });
-    return field;
 });
 
 
@@ -155,10 +164,15 @@ module.exports.define("getAdderItem", function (val) {
 
 module.exports.defbind("initializeItemAdder", "setup", function () {
     if (this.add_item_field_id && this.record) {
-        this.setupItemAdder(this.add_item_field_id, this.add_item_unique);
+        this.copyItemAdderFromExistingField(this.add_item_field_id, this.add_item_unique);
     } else if (this.add_item_field && this.record) {            // deprecated and replaced...
         this.add_item_field_id = this.add_item_field;
-        this.setupItemAdder(this.add_item_field, this.add_item_unique);
+        this.copyItemAdderFromExistingField(this.add_item_field, this.add_item_unique);
+    } else {
+        this.setupItemAdder({
+            type: "ContextButton",
+            css_cmd: true,
+        });
     }
 });
 
@@ -166,8 +180,8 @@ module.exports.defbind("initializeItemAdder", "setup", function () {
 
 
 module.exports.define("setupItemDeleterField", function () {
-    this.record.addField({
-        id: "_delete",
+    this.delete_item_field = this.record.addField({
+        id: "_item_deleter",
         type: "ContextButton",
         // label: " ",
         btn_label: this.delete_item_label,
@@ -176,7 +190,7 @@ module.exports.define("setupItemDeleterField", function () {
         btn_css_class: "css_col_control",
         css_cmd: true,
     });
-    this.record.moveTo("_delete", 0);
+    this.record.moveTo("_item_deleter", 0);
 });
 
 
@@ -195,8 +209,8 @@ module.exports.defbind("initializeItemDeleter", "setup", function () {
 module.exports.define("setupItemControlField", function () {
     var that = this;
     var visible = !!this.entity.getDisplayPage();
-    this.row_control_field = this.record.addField({
-        id: "_row_control_" + this.id,
+    this.item_control_field = this.record.addField({
+        id: "_item_control",
         type: "Reference",
         label: "",
         ref_entity: this.entity.id,
@@ -212,7 +226,7 @@ module.exports.define("setupItemControlField", function () {
         dropdown_css_class: "btn-default btn-xs",
         dropdown_right_align: true,
     });
-    this.row_control_field.override("renderCell", function (row_elem, render_opts) {
+    this.item_control_field.override("renderCell", function (row_elem, render_opts) {
         if (this.dynamic_only && render_opts.dynamic_page === false) {
             return;
         }
@@ -477,7 +491,7 @@ module.exports.defbind("afterDeleteItem", "deleteItem", function (item) {
 module.exports.defbind("updateAddDeleteItems", "update", function (params) {
     var match;
     var that = this;
-    if (params.page_button === "list_add_" + this.id) {
+    if (params.page_button === "list_" + this.id + "_item_adder") {
         this.addItem({
             add_blank_item: true,
         });
@@ -488,11 +502,11 @@ module.exports.defbind("updateAddDeleteItems", "update", function (params) {
             field_id: this.add_item_field_id,
             field_val: params["add_item_field_" + this.id],
         });
-    } else if (typeof params.page_button === "string") {
-        match = params.page_button.match(new RegExp(this.id + "_([0-9]+)__delete"));
+    } else if (typeof params.page_button === "string" && params.page_button.indexOf("list_" + this.id)) {
+        match = params.page_button.match(new RegExp(this.id + "_([0-9]+)__item_deleter"));
         if (match && match.length > 1) {
             this.eachItem(function (item) {
-                if (item.getField("_delete").getControl() === match[0]) {
+                if (item.getField("_item_deleter").getControl() === match[0]) {
                     that.deleteItem(item);
                 }
             });
@@ -609,11 +623,11 @@ module.exports.defbind("renderItemAdder", "renderAfterItems", function (render_o
     if (this.add_item_field) {
         this.debug("renderItemAdder(): " + this.add_item_field.lov);
         this.add_item_field.renderFormGroup(foot_elmt, render_opts, "table-cell");
-    } else {
-        foot_elmt.makeElement("span", "css_list_add")
-            .makeElement("a", "css_cmd btn btn-default btn-xs", "list_add_" + this.id)
-            .attr("title", this.add_item_label)
-            .text(this.add_item_icon, true);
+    // } else {
+    //     foot_elmt.makeElement("span", "css_list_add")
+    //         .makeElement("a", "css_cmd btn btn-default btn-xs", "list_add_" + this.id)
+    //         .attr("title", this.add_item_label)
+    //         .text(this.add_item_icon, true);
     }
 });
 

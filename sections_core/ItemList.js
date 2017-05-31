@@ -40,7 +40,7 @@ module.exports.defbind("cloneColumns", "cloneInstance", function () {
 module.exports.defbind("setAdvancedMode", "setup", function () {
     this.list_advanced_mode = (this.owner.page.session.list_advanced_mode === true);
     if (this.allow_delete_items) {
-        this.record.getField("_delete").btn_label = this.delete_item_icon;
+        this.record.getField("_item_deleter").btn_label = this.delete_item_icon;
     }
 });
 
@@ -249,13 +249,11 @@ module.exports.define("getColumnVisibility", function () {
 
 module.exports.define("setColumnVisibility", function (params) {
     var columns;
-    if (this.list_advanced_mode && this.allow_choose_cols) {
-        if (Object.hasOwnProperty.call(params, "cols_filter_" + this.id + "_list")) {
-            columns = params["cols_filter_" + this.id + "_list"].split("|");
-            this.columns.each(function (col) {
-                col.visible = columns.indexOf(col.id) > -1;
-            });
-        }
+    if (this.list_advanced_mode && this.allow_choose_cols && params["cols_filter_" + this.id + "_list"]) {
+        columns = params["cols_filter_" + this.id + "_list"].split("|");
+        this.columns.each(function (col) {
+            col.visible = columns.indexOf(col.id) > -1;
+        });
     }
 });
 
@@ -385,7 +383,7 @@ module.exports.define("rowURL", function (row_elem, row_obj) {
     if (row_obj && typeof row_obj.getKey === "function") {
         row_key = row_obj.getKey();
         row_elem.attr("data-key", row_key);
-        display_page = this.record.getDisplayPage();                    // §vani.core.7.5.1.3
+        display_page = this.record.getDisplayPage();
         if (this.output_row_url && display_page
                 && display_page.allowed(this.owner.page.session, row_key, row_obj).access) {
             row_elem.attr("url", display_page.getSimpleURL(row_key));
