@@ -70,9 +70,11 @@ module.exports.define("addColumn", function (field) {
     if (!field.query_column) {
         this.warn("field has no query_column: " + field);
     }
-    col = this.columns.add({
+    col = this.columns.add(UI.ItemList.Column.clone({
+        id: field.id,
+        instance: true,
         field: field,
-    });
+    }));
     // if (this.row_control_field && this.columns.get(this.row_control_field.id)) {
     //     this.columns.moveTo(this.row_control_field.id, (this.columns.length() - 1));
     // }
@@ -339,8 +341,8 @@ module.exports.define("renderListRow", function (tbody_elmt, render_opts, item) 
         row_elem.makeElement("td");
     }
     this.columns.each(function (col) {
-        col.trace("Setting field to: " + item.getField(col.id));
-        col.field = item.getField(col.id);
+        // col.trace("Setting field to: " + item.getField(col.id));
+        // col.field = item.getField(col.id);
         if (col.isVisibleColumn(render_opts)) {
             col.renderCell(row_elem, render_opts);
         }
@@ -523,63 +525,3 @@ module.exports.define("renderAggregations", function (render_opts) {
         this.columns.get(i).renderAggregation(row_elem, 0, this.getRecordCount());
     }
 });
-
-
-/**
-* Create a new column object, using the spec properties supplied
-* @param Spec object whose properties will be given to the newly-created column
-* @return Newly-created column object
-*/
-module.exports.columns.override("add", function (col_spec) {
-    var column;
-    var copy_field_prop = {
-        id: { field_prop: "id", },
-        label: { field_prop: "label", },
-        visible: { field_prop: "list_column", },
-        query_column: { field_prop: "query_column", },
-        description: { field_prop: "description", },
-        aggregation: { field_prop: "aggregation", },
-        separate_row: { field_prop: "separate_row", },
-        sortable: { field_prop: "sortable", },
-        css_class: { default: "", },
-        css_class_col_header: { field_prop: "css_class_col_header", },
-        css_class_col_cell: { field_prop: "css_class_col_cell", },
-        sticky: { field_prop: "sticky_column", },
-        width: { field_prop: "col_width", },
-        min_width: { field_prop: "min_col_width", },
-        max_width: { field_prop: "max_col_width", },
-        tb_input: { field_prop: "tb_input_list", },
-        group_label: { field_prop: "col_group_label", },
-        decimal_digits: {
-            field_prop: "decimal_digits",
-            default: 0,
-        },
-    };
-    if (col_spec.field) {
-        if (col_spec.field.accessible === false) {
-            return null;
-        }
-        Object.keys(copy_field_prop).forEach(function (prop) {
-            var copy_field_spec = copy_field_prop[prop];
-            if (typeof col_spec[prop] === "undefined" && copy_field_spec.field_prop) {
-                col_spec[prop] = col_spec.field[copy_field_spec.field_prop];
-            }
-            if (typeof col_spec[prop] === "undefined" && copy_field_spec.default) {
-                col_spec[prop] = copy_field_spec.default;
-            }
-        });
-        col_spec.field.visible = true;              // show field content is column is visible
-    }
-    if (typeof col_spec.label !== "string") {
-        this.throwError("label not specified");
-    }
-    if (col_spec.group_label && typeof this.section.show_col_groups !== "boolean") {
-        this.section.show_col_groups = true;
-    }
-//    column = module.exports.Column.clone(col_spec);
-// Allows section specific column overrides to have an affect
-    column = module.exports.Column.clone(col_spec);
-    Core.OrderedMap.add.call(this, column);
-    return column;
-});
-

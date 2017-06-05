@@ -9,6 +9,7 @@ module.exports = UI.ItemList.clone({
     allow_add_items: false,
     allow_delete_items: false,
     output_row_url: true,
+    sortable: true,
     show_item_control: true,
 });
 

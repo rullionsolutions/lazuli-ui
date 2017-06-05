@@ -18,7 +18,7 @@ module.exports = Core.Base.clone({
     allow_panel_expand: true,
     allow_panel_reload: false,
     allow_panel_collapse: true,
-    allow_panel_remove: true,
+    allow_panel_remove: false,
     panel_initially_collapsed: false,
 });
 
@@ -140,7 +140,7 @@ module.exports.define("makePanelHeading", function (outer_div_elmt, render_opts)
     if (this.allow_panel_collapse) {
         button_grp_elmt.makeElement("a", "btn btn-xs btn-icon btn-circle btn-warning")
             .attr("data-click", "panel-collapse")
-            .makeElement("i", "fa fa-minus");
+            .makeElement("i", "fa " + (this.panel_initially_collapsed ? "fa-plus" : "fa-minus"));
     }
     if (this.allow_panel_remove) {
         button_grp_elmt.makeElement("a", "btn btn-xs btn-icon btn-circle btn-danger")

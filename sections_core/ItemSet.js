@@ -359,11 +359,6 @@ module.exports.define("getItemCount", function () {
 });
 
 
-module.exports.define("resetToStart", function () {
-    this.itemset = 1;
-});
-
-
 module.exports.define("eachItem", function (funct) {
     if (this.query_mode === "dynamic") {
         while (this.query.next()) {
@@ -515,6 +510,111 @@ module.exports.defbind("updateAddDeleteItems", "update", function (params) {
 });
 
 
+module.exports.defbind("updateItemControl", "update", function (params) {
+    var regex = new RegExp("list_(\\w+)_" + this.id + "(\\w*)");
+    var match = regex.exec(params.page_button);
+    this.trace("params.page_button: " + params.page_button + ", this.subsequent_recordset:" + this.itemset);
+    if (match && match.length > 1) {
+        if (match[1] === "set_frst") {
+            this.moveToFirstItemSet();
+        } else if (match[1] === "set_prev") {
+            this.moveToPrevItemSet();
+        } else if (match[1] === "set_next") {
+            this.moveToNextItemSet();
+        } else if (match[1] === "set_last") {
+            this.moveToLastItemSet();
+        } else if (match[1] === "show_detail_rows") {
+            this.showDetailRows();
+        } else if (match[1] === "hide_detail_rows") {
+            this.hideDetailRows();
+        } else if (match[1] === "level_break") {
+            this.setLevelBreak(parseInt(match[2].substr(1), 10));
+        } else if (match[1] === "sort_asc") {
+            this.sortByColumn(match[2].substr(1));
+        } else if (match[1] === "sort_desc") {
+            this.sortByColumn(match[2].substr(1), true);
+        }
+    }
+    this.trace("this.itemset: " + this.itemset + ", this.query.limit_offset:" + this.query.limit_offset);
+});
+
+
+module.exports.define("moveToNextItemSet", function () {
+    if (this.subsequent_itemset) {
+        this.throwError("no subsequent itemset");
+    }
+    this.itemset += 1;
+});
+
+
+module.exports.define("moveToPrevItemSet", function () {
+    if (this.itemset <= 1) {
+        this.throwError("no previous itemset");
+    }
+    this.itemset -= 1;
+});
+
+
+module.exports.define("moveToFirstItemSet", function () {
+    this.itemset = 1;
+});
+
+
+module.exports.define("moveToLastItemSet", function () {
+    if (!this.subsequent_itemset || this.open_ended_itemset) {
+        this.throwError("no last itemset");
+    }
+    this.itemset = this.itemset_last;
+});
+
+module.exports.define("extendItemSet", function () {
+    this.moveToFirstItemSet();
+    this.itemset_size += this.itemset_size_ext;
+});
+
+
+module.exports.define("showDetailRows", function () {
+    this.hide_detail_rows = false;
+});
+
+
+module.exports.define("hideDetailRows", function () {
+    this.hide_detail_rows = true;
+});
+
+
+module.exports.define("setLevelBreak", function (level) {
+    if (typeof level !== "number" || level < 1 || level > 3 || isNaN(level)) {
+        this.throwError("invalid level: " + level);
+    }
+    this.level_break_depth = level;
+    if (this.level_break_depth === 0) {
+        // if user hid detail rows then switched off level-breaking
+        this.showDetailRows();
+    }
+});
+
+
+module.exports.define("sortByColumn", function (column_id, desc) {
+    var column = this.columns.get(column_id);
+    if (!column) {
+        this.throwError("unrecognized column: " + column_id);
+    }
+    if (!this.sortable) {
+        this.throwError("list not sortable");
+    }
+    if (column.sortable === false) {
+        this.throwError("column not sortable");
+    }
+    column.query_column.sortTop();
+    if (desc) {
+        column.query_column.sortDesc();
+    } else {
+        column.query_column.sortAsc();
+    }
+});
+
+
 module.exports.defbind("renderItemSet", "render", function (render_opts) {
     var that = this;
     this.happen("renderBeforeItems", render_opts);
@@ -606,12 +706,6 @@ module.exports.define("setTestValues", function (item) {
 */
 module.exports.define("renderNoItems", function () {
     this.getSectionElement().text(this.text_no_items);
-});
-
-
-module.exports.define("extendItemSet", function () {
-    this.resetToStart();
-    this.itemset_size += this.itemset_size_ext;
 });
 
 

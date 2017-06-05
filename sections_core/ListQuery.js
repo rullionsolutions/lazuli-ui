@@ -137,6 +137,7 @@ module.exports.define("addColumn", function (field) {
     }
     col = this.columns.add({
         field: field,
+        query_column: field.query_column,
     });
     this.trace("Adding field as column: " + field.id + " to section " + this.id
         + ", query_column: " + field.query_column);
@@ -184,24 +185,38 @@ module.exports.defbind("updateRowSelector", "update", function (params) {
             this.hide_detail_rows = false;
         } else if (match[1] === "hide_detail_rows") {
             this.hide_detail_rows = true;
-        } else if (match[1] === "level_break" && match.length > 2) {
+        } else if (match[1] === "level_break") {
             this.level_break_depth = parseInt(match[2].substr(1), 10);
             if (this.level_break_depth === 0) {
                 // if user hid detail rows then switched off level-breaking
                 this.hide_detail_rows = false;
             }
-        } else if (match[1] === "sort_asc" && match.length > 2) {
+        } else if (match[1] === "sort_asc") {
             column = this.columns.get(match[2].substr(1));
-            if (this.sortable && column && column.sortable !== false) {
-                column.query_column.sortTop();
-                column.query_column.sortAsc();
+            if (!column) {
+                this.throwError("unrecognized column: " + match[2].substr(1));
             }
-        } else if (match[1] === "sort_desc" && match.length > 2) {
+            if (!this.sortable) {
+                this.throwError("list not sortable");
+            }
+            if (column.sortable === false) {
+                this.throwError("column not sortable");
+            }
+            column.query_column.sortTop();
+            column.query_column.sortAsc();
+        } else if (match[1] === "sort_desc") {
             column = this.columns.get(match[2].substr(1));
-            if (this.sortable && column && column.sortable !== false) {
-                column.query_column.sortTop();
-                column.query_column.sortDesc();
+            if (!column) {
+                this.throwError("unrecognized column: " + match[2].substr(1));
             }
+            if (!this.sortable) {
+                this.throwError("list not sortable");
+            }
+            if (column.sortable === false) {
+                this.throwError("column not sortable");
+            }
+            column.query_column.sortTop();
+            column.query_column.sortDesc();
         }
     }
     this.trace("this.recordset: " + this.recordset + ", this.query.limit_offset:" + this.query.limit_offset);

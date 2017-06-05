@@ -173,13 +173,20 @@ module.exports = Core.Base.clone({
 
 
 module.exports.defbind("initialize", "cloneInstance", function () {
+    var spec = {
+        id: this.entity_id,
+        skip_registration: true,
+    };
     if (!this.section) {
         this.throwError("section property is required");
     }
     this.origin_table = (this.origin_join && this.origin_join.table) || this.section.query.main;
-    this.record = Data.entities.getThrowIfUnrecognized(this.entity_id).getRecord({
-        page: this.section.owner.page,
-    });
+    if (this.section.query_mode === "dynamic") {
+        spec.page = this.section.owner.page;
+        spec.instance = true;
+        spec.id_prefix = "list_" + this.id;
+    }
+    this.record = Data.entities.getThrowIfUnrecognized(this.entity_id).getRecord(spec);
     this.table = this.section.query.addTable({ table: this.entity_id, });
     if (this.type) {
         this.setType(this.type);
@@ -279,12 +286,12 @@ module.exports.define("addColumn", function (field_id) {
     var field = this.record.getField(field_id);
     field.query_column = field.addColumnToTable(this.table);
     delete field.ignore_in_query;
-    column = this.section.columns.add({
+    column = this.section.columns.add(UI.ItemList.Column.clone({
         id: field.query_column.name,
         field: field,
         label: this.label + " / " + field.label,
         visible: true,
-    });
+    }));
     this.debug("Adding field as column: " + column.id + " to section " + this.section.id
         + ", query_column: " + field.query_column);
     return column;

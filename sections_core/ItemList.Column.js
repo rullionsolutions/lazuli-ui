@@ -7,10 +7,73 @@ var Core = require("lapis-core/index.js");
 */
 module.exports = Core.Base.clone({
     id: "ItemList.Column",
-    visible: true,
     hover_text_icon: "&#x24D8;",
 });
 
+
+/**
+* Create a new column object, using the spec properties supplied
+* @param Spec object whose properties will be given to the newly-created column
+* @return Newly-created column object
+*/
+module.exports.defbind("initialize", "cloneInstance", function () {
+    if (this.field) {
+        if (this.field.accessible === false) {
+            this.throwError("must not add inaccessible field as column");
+        }
+        this.inheritFieldSettings(this.field);
+    }
+    if (typeof this.label !== "string") {
+        this.throwError("label not specified");
+    }
+    if (typeof this.visible !== "boolean") {
+        this.visible = true;
+    }
+    if (this.group_label && typeof this.owner.section.show_col_groups !== "boolean") {
+        this.owner.section.show_col_groups = true;
+    }
+});
+
+
+module.exports.define("inheritFieldSettings", function (field) {
+    var that = this;
+    var copy_field_prop = {
+        // id: { field_prop: "id", },
+        label: { field_prop: "label", },
+        visible: {
+            field_prop: "list_column",
+            default: false,
+        },
+        query_column: { field_prop: "query_column", },
+        description: { field_prop: "description", },
+        aggregation: { field_prop: "aggregation", },
+        separate_row: { field_prop: "separate_row", },
+        sortable: { field_prop: "sortable", },
+        css_class: { default: "", },
+        css_class_col_header: { field_prop: "css_class_col_header", },
+        css_class_col_cell: { field_prop: "css_class_col_cell", },
+        sticky: { field_prop: "sticky_column", },
+        width: { field_prop: "col_width", },
+        min_width: { field_prop: "min_col_width", },
+        max_width: { field_prop: "max_col_width", },
+        tb_input: { field_prop: "tb_input_list", },
+        group_label: { field_prop: "col_group_label", },
+        decimal_digits: {
+            field_prop: "decimal_digits",
+            default: 0,
+        },
+    };
+    Object.keys(copy_field_prop).forEach(function (prop) {
+        var copy_field_spec = copy_field_prop[prop];
+        if (that[prop] === undefined && copy_field_spec.field_prop) {
+            that[prop] = that.field[copy_field_spec.field_prop];
+        }
+        if (that[prop] === undefined && copy_field_spec.default !== undefined) {
+            that[prop] = copy_field_spec.default;
+        }
+    });
+    this.field.visible = true;         // use column visibility rather than field visibility
+});
 
 /**
 * To indicate whether or not this column is visible (as a column, i.e. not a separate row),
@@ -19,22 +82,6 @@ module.exports = Core.Base.clone({
 * @return true if this column is a visible column, otherwise false
 */
 module.exports.define("isVisibleColumn", function (render_opts) {
-    var column_paging = true;
-    if (typeof render_opts !== "object") {
-        this.throwError("invalid argument");
-    }
-    if (this.owner.section.max_visible_columns && !this.sticky) {
-        column_paging = this.non_sticky_col_seq >=
-            (this.owner.section.current_column_page * this.owner.section.non_sticky_cols_per_page)
-            && this.non_sticky_col_seq <
-                ((this.owner.section.current_column_page + 1)
-                * this.owner.section.non_sticky_cols_per_page);
-    }
-    return column_paging && this.isVisibleDisregardingColumnPaging(render_opts);
-});
-
-
-module.exports.define("isVisibleDisregardingColumnPaging", function (render_opts) {
     return this.visible && !this.separate_row
         && !(this.dynamic_only && render_opts.dynamic_page === false)
         && (typeof this.level_break !== "number");
@@ -160,7 +207,7 @@ module.exports.define("renderCell", function (row_elem, render_opts) {
     if (this.field) {
         cell_elem = this.field.renderCell(row_elem, render_opts);
     } else {
-        cell_elem = row_elem.makeElement("td", this.css_class_col_cell);
+        cell_elem = row_elem.makeElement("td", this.css_class_col_cell, this.id);
         if (this.text) {
             cell_elem.text(this.text);
         }
