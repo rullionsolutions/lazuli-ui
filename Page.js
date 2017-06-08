@@ -825,6 +825,7 @@ module.exports.define("renderDetails", function (page_elem, render_opts) {
     var details_elmt = page_elem.makeElement("div", "css_hide", "css_payload_page_details");
     var area = this.getArea();
     var entity_search_page;
+    var includes_elmt;
 
     details_elmt.attr("data-page-id", this.id);
     details_elmt.attr("data-page-skin", this.skin);
@@ -858,6 +859,13 @@ module.exports.define("renderDetails", function (page_elem, render_opts) {
                 && this.page_key && this.session.refer_sections[this.id].outputNavLinks) {
             this.session.refer_sections[this.id].outputNavLinks(this.page_key, details_elmt);
         }
+    }
+
+    if (this.includes) {
+        includes_elmt = details_elmt.makeElement("div", null, "css_page_includes");
+        this.includes.forEach(function (include) {
+            includes_elmt.makeElement("span").text(include);
+        });
     }
 });
 
