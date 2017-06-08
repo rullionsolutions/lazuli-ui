@@ -53,7 +53,7 @@ module.exports.define("setupRecord", function (entity_id) {
         id: entity_id,
         skip_registration: true,
     };
-    if (this.query_mode === "dynamic") {
+    if (this.isDynamicQueryMode()) {
         spec.page = this.owner.page;
         spec.instance = true;
         spec.id_prefix = "list_" + this.id;
@@ -304,7 +304,7 @@ module.exports.define("load", function () {
 
 
 module.exports.defbind("initializeLoad", "setup", function () {
-    if (this.query_mode === "preload" || this.query_mode === "manual" || this.query_mode === "dynamic") {
+    if (this.query_mode === "preload" || this.query_mode === "manual" || this.isDynamicQueryMode()) {
         if (!this.query) {
             if (this.load_entity_id) {
                 this.setupQuery(Data.entities.get(this.load_entity_id));
@@ -320,7 +320,7 @@ module.exports.defbind("initializeLoad", "setup", function () {
 
 
 module.exports.define("addItem", function (spec) {
-    if (!this.allow_add_items || this.query_mode === "dynamic") {
+    if (!this.allow_add_items || this.isDynamicQueryMode()) {
         this.throwError("items cannot be added to this ItemSet");
     }
     return this.addItemInternal(spec);
@@ -341,7 +341,7 @@ module.exports.define("deleteItem", function (item) {
     if (i < 0) {
         this.throwError("item not in this ItemSet: " + item.id);
     }
-    if (!this.allow_delete_items || this.query_mode === "dynamic") {
+    if (!this.allow_delete_items || this.isDynamicQueryMode()) {
         this.throwError("items cannot be deleted from this ItemSet");
     }
     if (item.allow_delete === false) {
@@ -360,7 +360,7 @@ module.exports.define("getItemCount", function () {
 
 
 module.exports.define("eachItem", function (funct) {
-    if (this.query_mode === "dynamic") {
+    if (this.isDynamicQueryMode()) {
         while (this.query.next()) {
             this.populateRecordFromQuery();
             funct(this.record);
@@ -390,6 +390,11 @@ module.exports.override("isValid", function () {
 });
 
 
+module.exports.define("isDynamicQueryMode", function () {
+    return (this.query_mode.indexOf("dynamic") === 0);
+});
+
+
 module.exports.define("makeItemFromSpec", function (spec) {
     var record;
     if (spec.key) {
@@ -416,7 +421,7 @@ module.exports.define("createNewRecordWithField", function (field_id, field_val)
             && !this.getAddRowItem(field_val).active) {
         this.throwError("createNewRecordWithField() row already exists: " + field_val);
     }
-    this.getParentRecord();         // ensure this.parent_record populated if can be
+    // this.getParentRecord();         // ensure this.parent_record populated if can be
     if (this.record.getField(field_id).isKey() && this.parent_record
             && this.parent_record.isKeyComplete()) {
         row = this.getDeletedRecordIfExists(field_id, field_val);
@@ -437,7 +442,7 @@ module.exports.define("createNewRecord", function () {
 module.exports.define("getDeletedRecordIfExists", function (field_id, field_val) {
     var row;
     var key_values = {};
-    key_values[this.link_field] = this.getParentRecord().getKey();
+    key_values[this.link_field] = this.parent_record.getKey();
     key_values[field_id] = field_val;
     this.debug("getDeletedRowIfExists() " + this.view.call(key_values));
     row = this.record.getCachedRecordFromKeyValues(key_values, this.owner.page.getTrans());
@@ -540,7 +545,7 @@ module.exports.defbind("updateItemControl", "update", function (params) {
 
 
 module.exports.define("moveToNextItemSet", function () {
-    if (this.subsequent_itemset) {
+    if (this.query_limits && !this.subsequent_itemset) {
         this.throwError("no subsequent itemset");
     }
     this.itemset += 1;
@@ -555,13 +560,14 @@ module.exports.define("moveToPrevItemSet", function () {
 });
 
 
+
 module.exports.define("moveToFirstItemSet", function () {
     this.itemset = 1;
 });
 
 
 module.exports.define("moveToLastItemSet", function () {
-    if (!this.subsequent_itemset || this.open_ended_itemset) {
+    if (this.query_limits && !this.subsequent_itemset) {
         this.throwError("no last itemset");
     }
     this.itemset = this.itemset_last;
@@ -571,7 +577,6 @@ module.exports.define("extendItemSet", function () {
     this.moveToFirstItemSet();
     this.itemset_size += this.itemset_size_ext;
 });
-
 
 module.exports.define("showDetailRows", function () {
     this.hide_detail_rows = false;
@@ -591,6 +596,9 @@ module.exports.define("setLevelBreak", function (level) {
     if (this.level_break_depth === 0) {
         // if user hid detail rows then switched off level-breaking
         this.showDetailRows();
+        this.query_limits = true;
+    } else {
+        this.query_limits = false;
     }
 });
 
@@ -626,8 +634,11 @@ module.exports.defbind("renderItemSet", "render", function (render_opts) {
             that.setTestValues(item);
         }
         that.trace("renderItemSet(): " + item);
-        that.renderItem(that.item_elmt, render_opts, item);
-        that.item_count += 1;
+        that.preRenderItem(that.item_elmt, render_opts, item);
+        if (that.isItemToRender(item)) {
+            that.renderItem(that.item_elmt, render_opts, item);
+            that.item_count += 1;
+        }
     });
     this.happen("renderAfterItems", render_opts);
 });
@@ -652,38 +663,88 @@ module.exports.define("renderItem", function (parent_elmt, render_opts, item) {
 
 
 module.exports.defbind("setQueryLimitsIfDynamic", "renderBeforeItems", function (render_opts) {
-    if (this.query_mode === "dynamic") {
+    if (this.isDynamicQueryMode()) {
         this.setQueryLimits(render_opts);
     }
 });
 
 
+module.exports.define("getItemSetSize", function (render_opts) {
+    return (render_opts && render_opts.long_lists && this.itemset_size_long_lists)
+        || this.itemset_size;
+});
+
+
 module.exports.define("setQueryLimits", function (render_opts) {
-    var itemset_size = this.itemset_size;
+    var itemset_size = this.getItemSetSize(render_opts);
     if (!this.query) {
         this.throwError("no query object");
     }
-    if (render_opts.long_lists && itemset_size < this.itemset_size_long_lists) {
-        itemset_size = this.itemset_size_long_lists;
-    }
-    if (this.hide_detail_rows) {
-        this.itemset = 1;
-        this.query.limit_offset = 0;
-        this.query.limit_row_count = 0;
-    } else if (render_opts && render_opts.long_lists) {
-        this.recordset = 1;
-        this.query.limit_offset = 0;
-        this.query.limit_row_count = itemset_size;
-    } else {
+    this.subsequent_itemset = false;
+    this.frst_item_in_set = ((this.itemset - 1) * itemset_size) + 1;
+    this.last_item_in_set = this.itemset * itemset_size;
+    this.query.get_found_rows = this.query_limits;
+    if (this.query_limits) {
         this.query.limit_offset = ((this.itemset - 1) * itemset_size);
         this.query.limit_row_count = itemset_size;
-        if (this.include_query_row_before_itemset && (this.itemset > 1)) {
+        if (this.itemset > 1) {
             this.query.limit_offset -= 1;
             this.query.limit_row_count += 1;
         }
-        if (this.include_query_row_after_itemset) {
-            this.query.limit_row_count += 1;
+        this.query.limit_row_count += 1;
+    } else {
+        // this.itemset = 1;
+        this.query.limit_offset = 0;
+        this.query.limit_row_count = 0;
+    }
+});
+
+
+module.exports.define("preRenderItem", function (parent_elmt, render_opts, item) {
+    var item_number = this.query.rows;
+    if (this.level_break_depth === 0) {
+        this.calcBrokenLevel();
+        this.renderBreakEnd(render_opts);
+        this.updateBreakAggregations();
+    }
+    if (this.query_limits) {
+        item_number += this.query.limit_offset;
+    }
+    this.before_shown_items = (item_number < this.frst_item_in_set);
+    this.after_shown_items = (item_number > this.last_item_in_set);
+    if (this.before_shown_items) {
+        this.prev_itemset_last_key = this.query.getColumn("A._key").get();
+    }
+    if (this.after_shown_items) {
+        if (!this.subsequent_itemset) {
+            this.next_itemset_frst_key = this.query.getColumn("A._key").get();
         }
+        this.subsequent_itemset = true;
+    }
+    this.trace("preRenderItem(): " + this.query_limits + ", " + this.query.rows + ", "
+        + this.query.found_rows + ", "
+        + this.query.limit_row_count + ", " + this.query.limit_offset + ", "
+        + this.before_shown_items + ", " + this.prev_itemset_last_key + ", "
+        + this.after_shown_items + ", " + this.next_itemset_frst_key);
+});
+
+
+module.exports.define("isItemToRender", function (item) {
+    return !this.hide_detail_rows && !this.before_shown_items && !this.after_shown_items;
+});
+
+
+module.exports.defbind("recalcAfterRenderItems", "renderAfterItems", function (render_opts) {
+    var last_item = this.query.rows;
+    var itemset_size = this.getItemSetSize(render_opts);
+    this.found_items = this.query.rows;
+    if (this.query_limits) {
+        last_item += this.query.limit_offset;
+        this.found_items = this.query.found_rows;
+    }
+    this.itemset_last = Math.floor((this.found_items - 1) / itemset_size) + 1;
+    if (last_item < this.last_item_in_set) {
+        this.last_item_in_set = last_item;
     }
 });
 
@@ -697,6 +758,129 @@ module.exports.define("setTestValues", function (item) {
         this.test_values = [];
     }
     this.test_values.push(obj);
+});
+
+
+module.exports.defbind("resetAggregations", "renderBeforeItems", function (render_opts) {
+    var that = this;
+    var i;
+    this.levels = [];
+    for (i = 0; i <= this.level_break_depth; i += 1) {
+        this.levels[i] = {
+            items: 0,
+            index: i,
+        };
+    }
+    this.record.each(function (field) {
+        var sort_seq = field.query_column && field.query_column.sort_seq;
+        var j;
+
+        delete field.level_break;
+        if (typeof sort_seq === "number" && sort_seq < that.level_break_depth) {
+            // 1 is the highest level break column index
+            that.levels[sort_seq + 1].field = field;
+            field.level_break = sort_seq + 1;
+        }
+        field.total = [];
+        for (j = 0; j <= that.level_break_depth; j += 1) {
+            field.total[j] = 0;
+        }
+    });
+    i = this.level_break_depth;
+    while (i > 0) {
+        if (!this.levels[i].field) {
+            this.error("no field at level " + i);
+            this.level_break_depth -= 1;
+        }
+        i -= 1;
+    }
+});
+
+
+// purpose: To work out which level has broken and set level_broken
+// property accordingly
+module.exports.define("calcBrokenLevel", function () {
+    var i;
+    var val;
+
+    this.level_broken = 999;
+    for (i = 1; i <= this.level_break_depth && i < this.level_broken; i += 1) {
+        if (this.levels[i].field) {
+            val = this.levels[i].field.get();
+            if (val !== this.levels[i].field.prev_item_val) {
+                this.level_broken = i;
+            }
+            this.levels[i].field.prev_item_val = val;
+        }
+    }
+    this.trace("calcBrokenLevel() item_count: " + this.item_count
+        + ", level_broken: " + this.level_broken);
+});
+
+
+// purpose: To update column aggregations by calling updateAggregations() on each column,
+// and then set the text property on each level object from column.field.getText() if there
+// is a field object, otherwise using column.text, or '[no column]'
+module.exports.define("updateBreakAggregations", function () {
+    var that = this;
+    var i;
+
+    this.record.each(function (field) {
+        field.updateAggregations(that.level_broken);
+    });
+    for (i = this.level_break_depth; i >= this.level_broken; i -= 1) {
+        this.levels[i].items = 0;
+        this.levels[i].text = null;
+        if (this.levels[i].field) {
+            this.levels[i].text = this.levels[i].field.getText();
+        } else {
+            this.levels[i].text = "[blank]";
+        }
+    }
+    for (i = 0; i <= this.level_break_depth; i += 1) {
+        this.levels[i].items += 1;
+    }
+});
+
+
+// purpose: To render level-break footer rows by calling renderBreakEndLevel() on each broken level
+// args   : render_opts, first_row_in_resultset (boolean), level_broken (integer)
+module.exports.define("renderBreakEnd", function (render_opts) {
+    var i;
+    if (this.item_count > 0 && !this.hide_break_ends) {
+        for (i = this.level_break_depth; i >= this.level_broken; i -= 1) {
+            this.renderBreakEndLevel(this.levels[i], render_opts);
+        }
+    }
+});
+
+
+module.exports.define("renderBreakEndLevel", function (level, render_opts) {
+    this.throwError("not implemented");
+});
+
+
+// purpose: To render the level-break header rows by calling renderBreakStartLevel() on
+//          continuation levels and then each broken level
+// args   : render_opts, first_row_in_resultset (boolean)
+module.exports.define("renderBreakStart", function (render_opts) {
+    var i;
+    if (this.item_count === 0 && this.itemset > 1 && !this.hide_break_starts) {
+        for (i = 1; (i <= this.level_break_depth) && (i < this.level_broken); i += 1) {
+            this.renderBreakStartLevel(this.levels[i], render_opts, "&nbsp;(continued)");
+        }
+    }
+    for (i = this.level_broken; i <= this.level_break_depth; i += 1) {
+        if (this.hide_detail_rows && i === this.level_break_depth) {
+            break;          // skip lowest-level start line if hiding detail rows
+        }
+        this.renderBreakStartLevel(this.levels[i], render_opts);
+    }
+});
+
+
+module.exports.define("renderBreakStartLevel", function (level, render_opts, suffix) {
+    this.throwError("not implemented");
 });
 
 
@@ -746,13 +930,12 @@ module.exports.defbind("renderListPager", "renderAfterItems", function (render_o
             .text(this.prev_itemset_icon, true);
     }
 
-    ctrl_elem.text(this.getItemCountText());
-
+    ctrl_elem.makeElement("a", "btn btn-default btn-xs disabled css_list_rowcount")
+        .text(this.getItemCountText());
 //    if (this.open_ended_itemset || (this.itemset_last > 1 &&
 // this.itemset < this.itemset_last)) {
     if (this.subsequent_itemset || this.itemset > 1) {
         ctrl_elem
-            .makeElement("span", "css_list_itemcount")
             .makeElement("a", "css_cmd btn btn-default btn-xs", "list_set_extend_" + this.id)
             .attr("title", "expand this itemset by " + this.itemset_size_ext + " items")
             .text(this.extd_itemset_icon, true);

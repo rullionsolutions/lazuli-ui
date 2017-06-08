@@ -194,7 +194,7 @@ module.exports.define("getTableElement", function (render_opts) {
     var css_class;
 
     if (!this.table_elem) {
-        css_class = "css_list table table-condensed table-hover form-inline";
+        css_class = "css_list table table-condensed table-hover";
         if (this.selected_keys && this.selected_keys.length > 0) {
             css_class += " css_mr_selecting";
         }
@@ -421,6 +421,113 @@ module.exports.define("renderBulk", function (tfoot_elem, render_opts) {
 });
 
 
+module.exports.defbind("resetAggregationsColumns", "renderBeforeItems", function (render_opts) {
+    var i;
+    var column;
+
+    this.first_aggregate_column = -1;
+    this.pre_aggregate_colspan = 0;
+
+    for (i = 0; i < this.columns.length(); i += 1) {
+        column = this.columns.get(i);
+        if (column.isVisibleColumn(render_opts)) {
+            if (column.aggregation && column.aggregation !== "N") {
+                this.first_aggregate_column = i;
+                break;
+            }
+            this.pre_aggregate_colspan += 1;
+        }
+    }
+});
+
+
+// purpose: To render a level-break footer row for the given broken level,
+//          reporting aggregations as specified
+// args   : level (object), render_opts
+module.exports.override("renderBreakEndLevel", function (level, render_opts) {
+    var table_elem = this.getTableElement(render_opts);
+    var tr_elem = table_elem.makeElement("tr", "css_row_total");
+    var td_elem;
+    var i;
+    var colspan;
+
+    this.debug("renderLevelBreakEnd() pre_aggregate_colspan: " + this.pre_aggregate_colspan
+        + ", first_aggregate_column: " + this.first_aggregate_column);
+    if (this.level_break_depth === 0) {
+        if (this.pre_aggregate_colspan > 0) {
+            td_elem = tr_elem.makeElement("td", "css_align_right");
+            td_elem.attr("colspan", this.pre_aggregate_colspan.toFixed(0));
+            td_elem.text(this.text_total_row + " (for rows shown)");
+            level.rows = this.item_count;            // this isn't set otherwise
+        }
+    } else if (this.pre_aggregate_colspan === 0) {
+        td_elem = tr_elem.makeElement("td");
+        td_elem.text(this.text_total_row);
+    } else {
+        for (i = 1; i < level.index; i += 1) {
+            tr_elem.makeElement("td");
+        }
+        colspan = (this.pre_aggregate_colspan + this.level_break_depth)
+            - level.index - (level.index === 0 ? 1 : 0);
+        tr_elem.makeElement("td", "css_type_number")
+            .text(String(level.rows));
+        td_elem = tr_elem.makeElement("td");
+        td_elem.attr("colspan", colspan.toFixed(0));
+        td_elem.text("row" + (level.rows === 1 ? "" : "s"));
+        if (level.column) {
+            td_elem.text("&nbsp;for " + level.column.label);
+        }
+        if (level.text) {
+            td_elem.text(": " + level.text);
+        }
+        if (this.text_total_row) {
+            td_elem.text(", " + this.text_total_row);
+        }
+    }
+    for (i = this.first_aggregate_column; i > -1 && i < this.columns.length(); i += 1) {
+        if (this.columns.get(i).isVisibleColumn(render_opts)) {
+            this.columns.get(i).renderAggregation(tr_elem, render_opts, level.index, level.rows);
+        }
+    }
+});
+
+
+// purpose: To render a level-break header row for the given broken level
+// args   : table_elem (xmlstream), render_opts, level (integer), suffix (string) - e.g. '(continued)'
+module.exports.override("renderBreakStartLevel", function (level, render_opts, suffix) {
+    var table_elem = this.getTableElement(render_opts);
+    var tr_elem;
+    var td_elem;
+    var i;
+
+    if (!level.field) {
+        return;
+    }
+    tr_elem = table_elem.makeElement("tr", "css_row_start");
+    for (i = 1; i < level.index; i += 1) {
+        tr_elem.makeElement("td");
+    }
+    td_elem = tr_elem.makeElement("td");
+    td_elem.attr("colspan", "99");
+//    td_elem.addText("renderLevelBreakStart index: " + index + ", column: " + this.level_break_cols[index]);
+    if (this.list_advanced_mode && this.sortable && level.column.sortable !== false && render_opts.dynamic_page !== false) {
+        level.column.renderSortLink(td_elem);
+    }
+    if (level.column.label) {
+        td_elem.text(level.column.label + ":&nbsp;");
+    }
+    if (level.column.field && !level.column.field.isBlank()) {
+        level.column.field.renderUneditable(td_elem.makeElement("span"), render_opts);
+    // column property 'text' is for manually setting cell content, not header / level-break label
+    // } else if (typeof level.column.text === "string") {
+    //     td_elem.addText(level.column.text);
+    }
+    if (suffix) {
+        td_elem.text(suffix);
+    }
+});
+
+
 /**
 * To render a column-chooser control (a set of push-state buttons represents all available
 *columns, with the
@@ -452,7 +559,7 @@ module.exports.defbind("renderColumnChooser", "renderAfterItems", function (rend
 /**
 * Reset column aggregation counters
 */
-module.exports.define("resetAggregations", function () {
+module.exports.defbind("resetAggregationsColumn", "renderBeforeItems", function (render_opts) {
     var text_total_record = "";
     var delim = "";
 
