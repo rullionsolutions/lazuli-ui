@@ -22,7 +22,7 @@ module.exports.define("render", function (parent_elmt, render_opts) {
     if (this.main_button) {
         css_class += " btn_primary css_button_main";
     }
-    button_elmt = parent_elmt.makeElement("button", css_class, this.id);
+    button_elmt = parent_elmt.makeElement("li").makeElement("a", css_class, this.id);
     if (this.target) {
         button_elmt.attr("target", this.target);
     }
@@ -64,7 +64,7 @@ UI.Page.define("renderButtons", function (page_elem, render_opts) {
     this.buttons.each(function (button) {
         if (button.visible) {
             if (!elmt) {
-                elmt = page_elem.makeElement("div", "css_hide", "css_payload_page_buttons");
+                elmt = page_elem.makeElement("ul", "css_hide", "css_payload_page_buttons");
             }
             button.render(elmt, render_opts);
         }

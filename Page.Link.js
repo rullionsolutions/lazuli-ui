@@ -70,9 +70,9 @@ module.exports.define("getLabel", function () {
 */
 module.exports.define("render", function (parent_elmt, render_opts) {
 //    var link_elmt = parent_elmt.makeElement("a", this.css_class, this.id),
-    var css_class = this.css_class || "";
+    var css_class = this.css_class || "btn";
     var page_to = this.getToPage();
-    var link_elmt = parent_elmt.makeElement("a", css_class, this.id);
+    var link_elmt = parent_elmt.makeElement("li").makeElement("a", css_class, this.id);
     var url = this.getURL();
     var task_info;
     var tooltip;
@@ -200,7 +200,7 @@ UI.Page.define("renderLinks", function (parent_elmt, render_opts) {
     var elmt;
     this.links.each(function (link) {
         if (link.isVisible(that.session)) {
-            elmt = elmt || parent_elmt.makeElement("div", "css_hide", "css_payload_page_links");
+            elmt = elmt || parent_elmt.makeElement("ul", "css_hide", "css_payload_page_links");
             link.render(elmt, render_opts);
         }
     });
