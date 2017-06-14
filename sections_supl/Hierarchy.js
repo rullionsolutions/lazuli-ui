@@ -17,7 +17,7 @@ module.exports = UI.Section.clone({
 module.exports.defbind("setupLogic", "setup", function () {
     this.top_level = this.Level.clone({
         id: "_top",
-        entity_id: this.entity,
+        entity_id: this.entity_id,
         owner: this,
         include_children: true,
     });
