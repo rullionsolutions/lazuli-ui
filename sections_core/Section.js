@@ -80,6 +80,9 @@ module.exports.define("overrideEntity", function (entity_id) {
 */
 module.exports.define("render", function (getSectionParentElement, render_opts) {
     this.sctn_elem = null;
+    if (typeof getSectionParentElement !== "function") {
+        this.throwError("invalid call");
+    }
     this.getSectionParentElement = getSectionParentElement;
     if (!this.hide_section_if_empty) {
         this.getSectionElement(render_opts);

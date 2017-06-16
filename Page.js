@@ -268,7 +268,7 @@ module.exports.define("checkRecordSecurity", function (session, page_key, cached
 * @param params: object map of strings
 */
 module.exports.define("update", function (params) {
-    if (this.internal_state !== 29 && this.internal_state !== 39) {
+    if (this.internal_state !== 29 && this.internal_state !== 89) {
         this.throwError({
             type: "E",
             id: "invalid_update_entry_state",
@@ -767,6 +767,15 @@ module.exports.define("render", function (element, render_opts) {
     if (!this.active) {
         this.throwError("page not active");
     }
+    if (this.internal_state !== 39) {
+        this.throwError({
+            type: "E",
+            id: "invalid_update_entry_state",
+            internal_state: this.internal_state,
+            message: "this page is still processing - please try again later",
+        });
+    }
+    this.internal_state = 60;
     if (typeof this.override_render_all_sections === "boolean") {
         render_opts.all_sections = this.override_render_all_sections;
     }
@@ -779,19 +788,26 @@ module.exports.define("render", function (element, render_opts) {
         page_element: page_elem,
         render_opts: render_opts,
     });
+    this.internal_state = 63;
     this.renderSections(page_elem, render_opts, this.page_tab ? this.page_tab.id : null);
+    this.internal_state = 66;
     if (render_opts.include_buttons !== false) {
         this.renderButtons(page_elem, render_opts);
     }
+    this.internal_state = 70;
     if (render_opts.show_links !== false) {
         this.renderLinks(page_elem, render_opts);
     }
+    this.internal_state = 73;
     this.renderTabs(page_elem, render_opts);
+    this.internal_state = 76;
     this.renderDetails(page_elem, render_opts);
+    this.internal_state = 80;
     this.happen("renderEnd", {
         page_element: page_elem,
         render_opts: render_opts,
     });
+    this.internal_state = 89;
     return page_elem;
 });
 

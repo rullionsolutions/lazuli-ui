@@ -16,8 +16,10 @@ module.exports = Core.Base.clone({
 * @param xmlstream div element object to contain the buttons; render_opts
 */
 module.exports.define("render", function (parent_elmt, render_opts) {
-    var button_elmt;
-    button_elmt = parent_elmt.makeElement("li").makeElement("a", this.getCSSClass(render_opts), this.id);
+    var button_elmt = parent_elmt
+        .makeElement("li")
+        .makeElement("a", this.getCSSClass(render_opts), this.id);
+
     if (this.target) {
         button_elmt.attr("target", this.target);
     }

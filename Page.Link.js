@@ -72,16 +72,21 @@ module.exports.define("render", function (parent_elmt, render_opts) {
 //    var link_elmt = parent_elmt.makeElement("a", this.css_class, this.id),
     var css_class = this.css_class || "btn";
     var page_to = this.getToPage();
-    var link_elmt = parent_elmt.makeElement("li").makeElement("a", css_class, this.id);
     var url = this.getURL();
     var task_info;
     var tooltip;
+    var link_elmt = parent_elmt
+        .makeElement("li")
+        .makeElement("a", css_class, this.id);
 
     if (url) {
         link_elmt.attr("href", url);
     }
     if (this.target) {
         link_elmt.attr("target", this.target);
+    }
+    if (this.confirm_text) {
+        link_elmt.attr("data-confirm-text", this.confirm_text);
     }
     if (page_to) {
         task_info = this.owner.page.session.getPageTaskInfo(page_to.id, this.getKey());
