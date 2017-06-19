@@ -675,15 +675,8 @@ module.exports.define("save", function () {
         this.trans.save(this.outcome_id);                    // commit transaction
         this.reportSaveMessage();
         this.happen("success");
-        this.redirect_url = this.exit_url_save || this.exit_url
-            || this.session.last_non_trans_page_url;
         this.sendEmails();
-        this.http_status = 204;
-        this.http_message = "saved";
-        this.prompt_message = null;
-        // clearPageCache() calls cancel() on ALL pages including this one, so set active false
-        // first
-        this.active = false;
+        this.saveAndRedirect();
     } catch (e) {
 //        this.trans.reportErrors();
         if (e.type && e.text) {
@@ -746,6 +739,23 @@ module.exports.define("cancel", function (http_status, http_message) {
     this.active = false;
 });
 
+
+module.exports.define("cancelAndRedirect", function (redirect_url, http_status, http_message) {
+    this.exit_url_cancel = redirect_url;
+    this.cancel(http_status, http_message);
+});
+
+
+module.exports.define("saveAndRedirect", function (redirect_url) {
+    this.redirect_url = redirect_url || this.exit_url_save || this.exit_url
+        || this.session.last_non_trans_page_url;
+    this.http_status = 204;
+    this.http_message = "saved";
+    this.prompt_message = null;
+    // clearPageCache() calls cancel() on ALL pages including this one, so set active false
+    // first
+    this.active = false;
+});
 
 // ---------------------------------------------------------------------------------------  render
 /**
