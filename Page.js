@@ -470,9 +470,6 @@ module.exports.define("updateSections", function (params) {
 * @param params: object map of strings
 */
 module.exports.define("updateTrans", function (params) {
-    var first_warnings;
-    var save;
-
     if (!this.trans) {
         this.throwError("transaction not created");
     }
@@ -480,16 +477,12 @@ module.exports.define("updateTrans", function (params) {
         this.throwError("transaction not active");
     }
     this.trans.update();
-    this.outcome_id = params.page_button;
+    this.setOutcomeFromParams(params);
     // this.trans.messages.include_field_messages = false;
-    first_warnings = this.trans.messages.firstWarnings();
-    save = this.outcome_id
-            && this.buttons.get(this.outcome_id)
-            && this.buttons.get(this.outcome_id).save;
-    if (this.outcome_id === "cancel") {
+    if (this.isAttemptingCancel()) {
         this.cancel();
-    } else if (save) {
-        if (first_warnings) {        // unreported warnings
+    } else if (this.isAttemptingSave()) {
+        if (this.trans.messages.firstWarnings()) {        // unreported warnings
             this.trans.messages.add({
                 type: "W",
                 report: false,
@@ -501,6 +494,23 @@ module.exports.define("updateTrans", function (params) {
             this.save();
         }
     }
+});
+
+
+module.exports.define("setOutcomeFromParams", function (params) {
+    this.outcome_id = params.page_button;
+});
+
+
+module.exports.define("isAttemptingCancel", function () {
+    return (this.outcome_id === "cancel");
+});
+
+
+module.exports.define("isAttemptingSave", function () {
+    return (this.outcome_id
+            && this.buttons.get(this.outcome_id)
+            && this.buttons.get(this.outcome_id).save);
 });
 
 
