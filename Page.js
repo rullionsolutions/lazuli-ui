@@ -268,7 +268,7 @@ module.exports.define("checkRecordSecurity", function (session, page_key, cached
 * @param params: object map of strings
 */
 module.exports.define("update", function (params) {
-    if (this.internal_state !== 29 && this.internal_state !== 89) {
+    if (this.internal_state !== 29 && this.internal_state !== 39 && this.internal_state !== 89) {
         this.throwError({
             type: "E",
             id: "invalid_update_entry_state",
