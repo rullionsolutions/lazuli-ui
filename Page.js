@@ -280,6 +280,7 @@ module.exports.define("update", function (params) {
     this.session.newVisit(this.id, this.getPageTitle(), this.record_parameters ? params : null,
         this.page_key);
     this.updateReferParams(params);
+    this.setOutcome(params.page_button);
     this.internal_state = 31;
     if (!this.transactional && !this.trans && this.primary_row) {
         this.primary_row.reload();
@@ -477,7 +478,7 @@ module.exports.define("updateTrans", function (params) {
         this.throwError("transaction not active");
     }
     this.trans.update();
-    this.setOutcomeFromParams(params);
+    this.setOutcome(params.page_button);
     // this.trans.messages.include_field_messages = false;
     if (this.isAttemptingCancel()) {
         this.cancel();
@@ -497,8 +498,8 @@ module.exports.define("updateTrans", function (params) {
 });
 
 
-module.exports.define("setOutcomeFromParams", function (params) {
-    this.outcome_id = params.page_button;
+module.exports.define("setOutcome", function (outcome_id) {
+    this.outcome_id = outcome_id;
 });
 
 
