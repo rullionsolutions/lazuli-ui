@@ -268,7 +268,7 @@ module.exports.define("checkRecordSecurity", function (session, page_key, cached
 * @param params: object map of strings
 */
 module.exports.define("update", function (params) {
-    if (this.internal_state !== 29 && this.internal_state !== 39) {
+    if (this.internal_state !== 29 && this.internal_state !== 39 && this.internal_state !== 89) {
         this.throwError({
             type: "E",
             id: "invalid_update_entry_state",
@@ -280,6 +280,7 @@ module.exports.define("update", function (params) {
     this.session.newVisit(this.id, this.getPageTitle(), this.record_parameters ? params : null,
         this.page_key);
     this.updateReferParams(params);
+    this.setOutcome(params.page_button);
     this.internal_state = 31;
     if (!this.transactional && !this.trans && this.primary_row) {
         this.primary_row.reload();
@@ -477,7 +478,7 @@ module.exports.define("updateTrans", function (params) {
         this.throwError("transaction not active");
     }
     this.trans.update();
-    this.setOutcomeFromParams(params);
+    this.setOutcome(params.page_button);
     // this.trans.messages.include_field_messages = false;
     if (this.isAttemptingCancel()) {
         this.cancel();
@@ -497,8 +498,8 @@ module.exports.define("updateTrans", function (params) {
 });
 
 
-module.exports.define("setOutcomeFromParams", function (params) {
-    this.outcome_id = params.page_button;
+module.exports.define("setOutcome", function (outcome_id) {
+    this.outcome_id = outcome_id;
 });
 
 
@@ -675,15 +676,8 @@ module.exports.define("save", function () {
         this.trans.save(this.outcome_id);                    // commit transaction
         this.reportSaveMessage();
         this.happen("success");
-        this.redirect_url = this.exit_url_save || this.exit_url
-            || this.session.last_non_trans_page_url;
         this.sendEmails();
-        this.http_status = 204;
-        this.http_message = "saved";
-        this.prompt_message = null;
-        // clearPageCache() calls cancel() on ALL pages including this one, so set active false
-        // first
-        this.active = false;
+        this.saveAndRedirect();
     } catch (e) {
 //        this.trans.reportErrors();
         if (e.type && e.text) {
@@ -747,6 +741,23 @@ module.exports.define("cancel", function (http_status, http_message) {
 });
 
 
+module.exports.define("cancelAndRedirect", function (redirect_url, http_status, http_message) {
+    this.exit_url_cancel = redirect_url;
+    this.cancel(http_status, http_message);
+});
+
+
+module.exports.define("saveAndRedirect", function (redirect_url) {
+    this.redirect_url = redirect_url || this.exit_url_save || this.exit_url
+        || this.session.last_non_trans_page_url;
+    this.http_status = 204;
+    this.http_message = "saved";
+    this.prompt_message = null;
+    // clearPageCache() calls cancel() on ALL pages including this one, so set active false
+    // first
+    this.active = false;
+});
+
 // ---------------------------------------------------------------------------------------  render
 /**
 * Generate HTML output for this page, given its current state; calls renderSections,
@@ -767,6 +778,15 @@ module.exports.define("render", function (element, render_opts) {
     if (!this.active) {
         this.throwError("page not active");
     }
+    if (this.internal_state !== 39) {
+        this.throwError({
+            type: "E",
+            id: "invalid_update_entry_state",
+            internal_state: this.internal_state,
+            message: "this page is still processing - please try again later",
+        });
+    }
+    this.internal_state = 60;
     if (typeof this.override_render_all_sections === "boolean") {
         render_opts.all_sections = this.override_render_all_sections;
     }
@@ -779,19 +799,26 @@ module.exports.define("render", function (element, render_opts) {
         page_element: page_elem,
         render_opts: render_opts,
     });
+    this.internal_state = 63;
     this.renderSections(page_elem, render_opts, this.page_tab ? this.page_tab.id : null);
+    this.internal_state = 66;
     if (render_opts.include_buttons !== false) {
         this.renderButtons(page_elem, render_opts);
     }
+    this.internal_state = 70;
     if (render_opts.show_links !== false) {
         this.renderLinks(page_elem, render_opts);
     }
+    this.internal_state = 73;
     this.renderTabs(page_elem, render_opts);
+    this.internal_state = 76;
     this.renderDetails(page_elem, render_opts);
+    this.internal_state = 80;
     this.happen("renderEnd", {
         page_element: page_elem,
         render_opts: render_opts,
     });
+    this.internal_state = 89;
     return page_elem;
 });
 

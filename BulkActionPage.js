@@ -133,8 +133,9 @@ module.exports.define("bulkAction", function (section) {
 
 
 module.exports.define("redirect", function () {
-    this.redirect_url = UI.pages.get(this.redirect_page).getSimpleURL(this.page_key);
-    this.active = false;
+    // this.redirect_url = UI.pages.get(this.redirect_page).getSimpleURL(this.page_key);
+    // this.active = false;
+    this.saveAndRedirect(UI.pages.get(this.redirect_page).getSimpleURL(this.page_key));
 });
 
 

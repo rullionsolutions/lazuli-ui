@@ -16,13 +16,10 @@ module.exports = Core.Base.clone({
 * @param xmlstream div element object to contain the buttons; render_opts
 */
 module.exports.define("render", function (parent_elmt, render_opts) {
-    var button_elmt;
-    var css_class = (this.css_class ? this.css_class + " " : "") + "btn css_cmd";
+    var button_elmt = parent_elmt
+        .makeElement("li")
+        .makeElement("a", this.getCSSClass(render_opts), this.id);
 
-    if (this.main_button) {
-        css_class += " btn_primary css_button_main";
-    }
-    button_elmt = parent_elmt.makeElement("button", css_class, this.id);
     if (this.target) {
         button_elmt.attr("target", this.target);
     }
@@ -33,6 +30,22 @@ module.exports.define("render", function (parent_elmt, render_opts) {
     return button_elmt;
 });
 
+
+module.exports.define("getCSSClass", function (render_opts) {
+    var css_class;
+    if (this.css_class) {
+        css_class = this.css_class;
+    } else if (this.main_button) {
+        css_class = "btn-primary";
+    } else {
+        css_class = "btn-default";
+    }
+    if (this.main_button) {
+        css_class += "css_button_main";
+    }
+    css_class += " btn css_cmd";
+    return css_class;
+});
 
 /*
 module.exports.define("click", function (event) {
@@ -64,7 +77,7 @@ UI.Page.define("renderButtons", function (page_elem, render_opts) {
     this.buttons.each(function (button) {
         if (button.visible) {
             if (!elmt) {
-                elmt = page_elem.makeElement("div", "css_hide", "css_payload_page_buttons");
+                elmt = page_elem.makeElement("ul", "css_hide", "css_payload_page_buttons");
             }
             button.render(elmt, render_opts);
         }
