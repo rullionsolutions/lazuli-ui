@@ -41,7 +41,7 @@ module.exports.define("getCSSClass", function (render_opts) {
         css_class = "btn-default";
     }
     if (this.main_button) {
-        css_class += "css_button_main";
+        css_class += " css_button_main";
     }
     css_class += " btn css_cmd";
     return css_class;
