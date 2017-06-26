@@ -424,12 +424,21 @@ module.exports.define("moveToTab", function (tab_ref, page_button) {
     if (this.tab_sequence) {
         this.buttons.get("prev_tab").visible = (curr_tab_ix > first_visible_tab_ix) && !this.tab_forward_only;
         this.buttons.get("next_tab").visible = (curr_tab_ix < last_visible_tab_ix);
-        this.buttons.each(function (button) {
-            if (button.save || (typeof button.show_at_last_visible_tab === "boolean" && button.show_at_last_visible_tab)) {
-                button.visible = (curr_tab_ix === last_visible_tab_ix);
-            }
-        });
+        this.setSaveButtonVisibility(curr_tab_ix === last_visible_tab_ix);
     }
+});
+
+
+module.exports.define("setSaveButtonVisibility", function (is_last_visible_tab) {
+    var show_save_buttons = is_last_visible_tab;
+    if (typeof this.show_save_buttons_on_tab === "string") {
+        show_save_buttons = (this.page_tab.id === this.show_save_buttons_on_tab);
+    }
+    this.buttons.each(function (button) {
+        if (button.save || (typeof button.show_at_last_visible_tab === "boolean" && button.show_at_last_visible_tab)) {
+            button.visible = show_save_buttons;
+        }
+    });
 });
 
 
