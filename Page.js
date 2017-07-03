@@ -787,7 +787,7 @@ module.exports.define("render", function (element, render_opts) {
     if (!this.active) {
         this.throwError("page not active");
     }
-    if (this.internal_state !== 39) {
+    if (this.internal_state !== 39 && this.internal_state !== 89) {
         this.throwError({
             type: "E",
             id: "invalid_update_entry_state",
