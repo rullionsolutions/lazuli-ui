@@ -104,6 +104,7 @@ module.exports.define("setupItemAdder", function (spec) {
     var type = Data.fields.getThrowIfUnrecognized(spec.type);
     spec.id = "list_" + this.id + "_item_adder";
     spec.label = this.add_item_label;
+    spec.instance = true;
     spec.btn_label = this.add_item_icon;
     this.add_item_field = type.clone(spec);
     this.add_item_field.override("getFormGroupCSSClass", function (form_type, editable) {
